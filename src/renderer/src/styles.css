@@ -2499,6 +2499,16 @@ body {
   color: var(--heart);
 }
 
+/* Filled while pointed at as well: a look at what clicking would leave. */
+.card__heart:hover svg path,
+.icon-button--fav:hover svg path {
+  fill: currentColor;
+}
+
+.icon-button--fav:hover {
+  color: var(--heart);
+}
+
 .card__heart--on {
   color: var(--heart);
 }

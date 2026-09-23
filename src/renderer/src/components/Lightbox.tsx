@@ -495,8 +495,8 @@ export function Lightbox(props: LightboxProps): React.JSX.Element {
               type="button"
               className={
                 item.favoritedAt !== null
-                  ? 'icon-button icon-button--on icon-button--heart'
-                  : 'icon-button'
+                  ? 'icon-button icon-button--fav icon-button--on icon-button--heart'
+                  : 'icon-button icon-button--fav'
               }
               onClick={() => props.onToggleFavorite?.(item)}
               aria-pressed={item.favoritedAt !== null}
