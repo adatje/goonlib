@@ -622,13 +622,13 @@ export function Lightbox(props: LightboxProps): React.JSX.Element {
         )}
       </div>
 
-      {caption && props.playback.showDescription ? (
+      {caption && props.playback.showDescription && props.playback.showCaption ? (
         <p className="caption" title={caption}>
           {caption}
         </p>
       ) : null}
 
-      {labels.length > 0 && props.playback.showDescription ? (
+      {labels.length > 0 && props.playback.showDescription && props.playback.showTags ? (
         <div className="labels" aria-label="Tags on this item">
           {labels.map((label) => (
             <span

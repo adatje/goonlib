@@ -43,6 +43,22 @@ export function AppSettings(props: {
       />
 
       <Toggle
+        label="Show description"
+        hint="Part of what the viewer's description button shows: the description itself."
+        checked={playback.showCaption}
+        disabled={!playback.showDescription}
+        onChange={(showCaption) => props.onPlaybackChange({ showCaption })}
+      />
+
+      <Toggle
+        label="Show tags"
+        hint="The other part: the item's tags, over the media."
+        checked={playback.showTags}
+        disabled={!playback.showDescription}
+        onChange={(showTags) => props.onPlaybackChange({ showTags })}
+      />
+
+      <Toggle
         label="Show EXIF data"
         hint="Shows a photo's EXIF data, if it has any: camera, lens, settings and the date it was taken."
         checked={playback.showExif}

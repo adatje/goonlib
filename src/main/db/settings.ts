@@ -30,6 +30,8 @@ export const SETTING_PLAY_ON_OPEN = 'playback.playOnOpen'
 export const SETTING_SHOW_EXIF = 'playback.showExif'
 export const SETTING_SHOW_LOCATION = 'playback.showLocation'
 export const SETTING_SHOW_DESCRIPTION = 'playback.showDescription'
+export const SETTING_SHOW_CAPTION = 'playback.showCaption'
+export const SETTING_SHOW_TAGS = 'playback.showTags'
 export const SETTING_LOOP = 'playback.loop'
 export const SETTING_DUPLICATE_DISTANCE = 'duplicates.distance'
 export const SETTING_TOY = 'toy.prefs'
@@ -113,6 +115,8 @@ export function playbackPrefs(): PlaybackPrefs {
     showLocation: getSetting(SETTING_SHOW_LOCATION) === '1',
     // On unless turned off: the viewer has always shown these.
     showDescription: getSetting(SETTING_SHOW_DESCRIPTION) !== '0',
+    showCaption: getSetting(SETTING_SHOW_CAPTION) !== '0',
+    showTags: getSetting(SETTING_SHOW_TAGS) !== '0',
     loop: getSetting(SETTING_LOOP) === '1',
   }
 }
@@ -152,6 +156,10 @@ export function setPlaybackPrefs(patch: Partial<PlaybackPrefs>): PlaybackPrefs {
   if (patch.showDescription !== undefined) {
     setSetting(SETTING_SHOW_DESCRIPTION, patch.showDescription ? '1' : '0')
   }
+  if (patch.showCaption !== undefined) {
+    setSetting(SETTING_SHOW_CAPTION, patch.showCaption ? '1' : '0')
+  }
+  if (patch.showTags !== undefined) setSetting(SETTING_SHOW_TAGS, patch.showTags ? '1' : '0')
   if (patch.loop !== undefined) setSetting(SETTING_LOOP, patch.loop ? '1' : '0')
   return playbackPrefs()
 }

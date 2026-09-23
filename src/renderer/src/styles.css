@@ -4206,18 +4206,26 @@ button.styling__reset:hover {
   background: var(--border);
 }
 
-/* Filing, in the same menus the viewer uses, stacked to the menu's width. */
+/* Filing, in the same menus the viewer uses, but wearing this menu's clothes. */
 .mediamenu__row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 2px 4px;
 }
 
 .mediamenu__row .addto__trigger {
   width: 100%;
-  text-align: left;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
   font-size: 13px;
+  text-align: left;
+}
+
+.mediamenu__row .addto__trigger:hover,
+.mediamenu__row .addto__trigger[aria-expanded='true'] {
+  background: var(--list-hover);
 }
 
 /* Its menus hang beside the item's menu rather than under it, as submenus do. */

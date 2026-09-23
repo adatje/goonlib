@@ -11,15 +11,25 @@ export interface ImageViewerProps {
   timerSeconds?: number | null
 }
 
-const MIN_ZOOM = 1
+/** Half size to eight times it; fitted to the window is 1. */
+const MIN_ZOOM = 0.5
 const MAX_ZOOM = 8
+const FIT = 1
 
 /**
- * Fit-to-window by default, with wheel zoom and drag to pan once zoomed in.
- * Panning is clamped so the image can never be dragged off screen entirely.
+ * The zoom carried from one image to the next, and from one opening of the
+ * viewer to the next. Deliberately not stored: a zoom is about the picture in
+ * front of you, so it lasts the session and the app opens fitted again.
+ */
+let lastZoom = FIT
+
+/**
+ * Fitted to the window by default, with wheel zoom either way and drag to pan
+ * once the picture is bigger than the window. Panning is clamped so the image
+ * can never be dragged off screen entirely.
  */
 export function ImageViewer({ item, timerSeconds = null }: ImageViewerProps): React.JSX.Element {
-  const [zoom, setZoom] = useState(1)
+  const [zoom, setZoom] = useState(lastZoom)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -45,9 +55,9 @@ export function ImageViewer({ item, timerSeconds = null }: ImageViewerProps): Re
     return () => observer.disconnect()
   }, [measure])
 
-  // Reset the view whenever a different image is shown.
+  // A different image is shown at the same zoom, centred again: stepping
+  // through a set at 150% should stay at 150%.
   useEffect(() => {
-    setZoom(1)
     setOffset({ x: 0, y: 0 })
     setFailed(false)
   }, [item.id])
@@ -55,8 +65,9 @@ export function ImageViewer({ item, timerSeconds = null }: ImageViewerProps): Re
   const applyZoom = useCallback((next: number) => {
     const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next))
     setZoom(clamped)
-    // Snapping back to fit should also recentre, or the image stays offset.
-    if (clamped === MIN_ZOOM) setOffset({ x: 0, y: 0 })
+    lastZoom = clamped
+    // Nothing to pan once it fits, so it is centred again.
+    if (clamped <= FIT) setOffset({ x: 0, y: 0 })
   }, [])
 
   const onWheel = useCallback(
@@ -69,7 +80,7 @@ export function ImageViewer({ item, timerSeconds = null }: ImageViewerProps): Re
 
   const onPointerDown = useCallback(
     (event: React.PointerEvent) => {
-      if (zoom <= MIN_ZOOM) return
+      if (zoom <= FIT) return
       event.currentTarget.setPointerCapture(event.pointerId)
       dragOrigin.current = { x: event.clientX, y: event.clientY, offsetX: offset.x, offsetY: offset.y }
       setDragging(true)
@@ -108,8 +119,8 @@ export function ImageViewer({ item, timerSeconds = null }: ImageViewerProps): Re
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
-      onDoubleClick={() => applyZoom(zoom > MIN_ZOOM ? MIN_ZOOM : 2)}
-      data-zoomed={zoom > MIN_ZOOM}
+      onDoubleClick={() => applyZoom(zoom === FIT ? 2 : FIT)}
+      data-zoomed={zoom > FIT}
       data-dragging={dragging}
     >
       <img
@@ -141,7 +152,7 @@ export function ImageViewer({ item, timerSeconds = null }: ImageViewerProps): Re
         />
       ) : null}
 
-      {zoom > MIN_ZOOM ? (
+      {zoom !== FIT ? (
         <span className="viewer__zoom">{Math.round(zoom * 100)}%</span>
       ) : null}
     </div>

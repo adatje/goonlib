@@ -260,6 +260,10 @@ export interface PlaybackPrefs {
   showLocation: boolean
   /** The viewer shows the item's description and tags over the media. */
   showDescription: boolean
+  /** Of those, the description itself. */
+  showCaption: boolean
+  /** Of those, the tag chips. */
+  showTags: boolean
   /** The open item repeats instead of the viewer moving on. */
   loop: boolean
 }

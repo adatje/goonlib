@@ -43,6 +43,8 @@ const DEFAULTS = {
   showExif: false,
   showLocation: false,
   showDescription: true,
+  showCaption: true,
+  showTags: true,
   loop: false,
 }
 

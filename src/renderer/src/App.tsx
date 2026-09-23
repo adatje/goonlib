@@ -118,6 +118,8 @@ export default function App(): React.JSX.Element {
     showExif: false,
     showLocation: false,
     showDescription: true,
+    showCaption: true,
+    showTags: true,
     loop: false,
   })
 
