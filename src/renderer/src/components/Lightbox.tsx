@@ -506,7 +506,12 @@ export function Lightbox(props: LightboxProps): React.JSX.Element {
             shortcut="S"
           />
 
-          {props.toy.live ? <ToyChip toy={props.toy} /> : null}
+          {props.toy.live ? (
+            <>
+              <span className="lightbox__divider" aria-hidden="true" />
+              <ToyChip toy={props.toy} />
+            </>
+          ) : null}
         </div>
 
         <div className="lightbox__side lightbox__side--end">
