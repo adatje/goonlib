@@ -2495,6 +2495,8 @@ body {
 
 .card__heart:hover {
   transform: scale(1.12);
+  /* Pink under the pointer, as the heart is everywhere else. */
+  color: var(--heart);
 }
 
 .card__heart--on {

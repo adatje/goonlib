@@ -56,7 +56,24 @@ export function ContinueRow(props: {
               progress={progress}
               onOpen={() => props.onOpen(item.id)}
               onContextMenu={props.onContextMenu}
-              onToggleFavorite={props.onToggleFavorite}
+              onToggleFavorite={(favourited) => {
+                // The row holds its own copy of each item, so the heart is
+                // flipped here as well or nothing on screen would change.
+                setItems((current) =>
+                  current.map((entry) =>
+                    entry.item.id === favourited.id
+                      ? {
+                          ...entry,
+                          item: {
+                            ...entry.item,
+                            favoritedAt: entry.item.favoritedAt === null ? Date.now() : null,
+                          },
+                        }
+                      : entry,
+                  ),
+                )
+                props.onToggleFavorite?.(favourited)
+              }}
               dismissTitle="Take off Continue watching"
               onDismiss={() => {
                 // Gone from the row at once; the place itself goes in the
