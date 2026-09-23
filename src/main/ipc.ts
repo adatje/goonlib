@@ -369,7 +369,12 @@ export function registerIpc(): void {
   ipcMain.on(IPC.mediaSetPosition, (_event, mediaId: number, positionMs: number, durationMs: number) => {
     if (!playbackPrefs().resumePosition) return
     try {
-      recordPosition(Number(mediaId), Number(positionMs), Number(durationMs))
+      recordPosition(
+        Number(mediaId),
+        Number(positionMs),
+        Number(durationMs),
+        playbackPrefs().resumeAfterPercent / 100,
+      )
     } catch (err) {
       console.error('[views] could not note a position:', err)
     }

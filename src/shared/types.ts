@@ -270,6 +270,11 @@ export interface PlaybackPrefs {
   keepHistory: boolean
   /** Note where a video was left, and carry on from there next time. */
   resumePosition: boolean
+  /**
+   * How far into a video you must be before the place is kept, as a percentage
+   * of its length. 0 keeps any position; the top of the range is half way.
+   */
+  resumeAfterPercent: number
   /** Show the Continue watching row above the library. */
   showContinue: boolean
   /** Opening something in a Watch Together session starts at the host's position. */
@@ -278,6 +283,9 @@ export interface PlaybackPrefs {
 
 /** The range Image autoplay timer is held to, in seconds. */
 export const IMAGE_SECONDS = { min: 1, max: 500, default: 8 } as const
+
+/** The range "remember after" is held to, as a percentage of a video's length. */
+export const RESUME_AFTER = { min: 0, max: 50, default: 30 } as const
 
 // ---------------------------------------------------------------------------
 // Toys

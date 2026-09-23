@@ -48,6 +48,7 @@ const DEFAULTS = {
   loop: false,
   keepHistory: true,
   resumePosition: true,
+  resumeAfterPercent: 30,
   showContinue: true,
   resumeInSessions: true,
 }

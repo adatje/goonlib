@@ -3,9 +3,9 @@
  * was left.
  *
  * The rules about a position are here rather than in the viewer, so every way
- * in agrees: a video watched to the end has no position to go back to, a
- * glance at the first few seconds is not worth resuming, and one left months
- * ago is not where you are any more.
+ * in agrees: a video watched to the end has no position to go back to, one
+ * barely started is not worth resuming, and one left months ago is not where
+ * you are any more. How far in "barely started" is comes from Settings.
  */
 
 import type { MediaItem, MediaViews } from '@shared/types'
@@ -15,8 +15,8 @@ import { MEDIA_COLUMNS_FOR_JOIN, toMediaItemRow } from './media'
 /** Past this much of a video, it counts as watched: nothing is kept. */
 const FINISHED_AT = 0.95
 
-/** Under this, there is nothing worth carrying on from. */
-const MIN_POSITION_MS = 30_000
+/** How far in a video must be, as a share of its length, before it is kept. */
+export const DEFAULT_MIN_SHARE = 0.3
 
 /** A position older than this is stale, and ignored. */
 const STALE_MS = 30 * 24 * 60 * 60 * 1000
@@ -67,12 +67,18 @@ export function recordPosition(
   mediaId: number,
   positionMs: number,
   durationMs: number,
+  minShare = DEFAULT_MIN_SHARE,
   now = Date.now(),
 ): void {
   const position = Number.isFinite(positionMs) ? Math.max(0, Math.round(positionMs)) : 0
   const duration = Number.isFinite(durationMs) ? Math.max(0, Math.round(durationMs)) : 0
+  const share = Number.isFinite(minShare) ? Math.min(0.5, Math.max(0, minShare)) : DEFAULT_MIN_SHARE
   const finished = duration > 0 && position >= duration * FINISHED_AT
-  const keep = position >= MIN_POSITION_MS && !finished
+  // Against the video's own length, so a few minutes into a film is nothing
+  // while the same into a short clip is most of it. A length that is not known
+  // yet falls back to a flat minute.
+  const far = duration > 0 ? position >= duration * share : position >= 60_000
+  const keep = far && !finished
 
   getDb()
     .prepare(

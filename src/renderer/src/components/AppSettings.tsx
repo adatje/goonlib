@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { IMAGE_SECONDS } from '@shared/types'
+import { IMAGE_SECONDS, RESUME_AFTER } from '@shared/types'
 import type { PlaybackPrefs } from '@shared/types'
 
 /**
@@ -113,6 +113,12 @@ function WatchHistory(props: {
         onChange={(resumePosition) => props.onPlaybackChange({ resumePosition })}
       />
 
+      <ResumeAfter
+        value={playback.resumeAfterPercent}
+        disabled={!playback.resumePosition}
+        onChange={(resumeAfterPercent) => props.onPlaybackChange({ resumeAfterPercent })}
+      />
+
       <Toggle
         label="Show Continue watching"
         hint="A row of part-watched videos above the library."
@@ -144,6 +150,51 @@ function Toggle(props: {
       <span className="switch__text">
         <span className="switch__label">{props.label}</span>
         <span className="switch__hint">{props.hint}</span>
+      </span>
+    </label>
+  )
+}
+
+/**
+ * How far into a video the place starts being kept, as a share of its length
+ * rather than a number of seconds: half a minute is nothing in a film and most
+ * of a clip, and a library has plenty of both.
+ */
+function ResumeAfter(props: {
+  value: number
+  disabled: boolean
+  onChange: (percent: number) => void
+}): React.JSX.Element {
+  const [draft, setDraft] = useState<number | null>(null)
+  const shown = draft ?? props.value
+
+  return (
+    <label className="settings__field">
+      <span className="settings__row">
+        <span className="settings__label">Remember after</span>
+        <span className="toy__value">{shown === 0 ? 'Any point' : `${shown}%`}</span>
+      </span>
+      <input
+        type="range"
+        className="settings__range"
+        min={RESUME_AFTER.min}
+        max={RESUME_AFTER.max}
+        step={5}
+        value={shown}
+        disabled={props.disabled}
+        onChange={(event) => setDraft(Number(event.target.value))}
+        onPointerUp={() => {
+          if (draft !== null && draft !== props.value) props.onChange(draft)
+          setDraft(null)
+        }}
+        onKeyUp={() => {
+          if (draft !== null && draft !== props.value) props.onChange(draft)
+          setDraft(null)
+        }}
+      />
+      <span className="settings__hint">
+        How far into a video you must be before the place is kept. A video whose length is not known
+        yet needs a minute.
       </span>
     </label>
   )

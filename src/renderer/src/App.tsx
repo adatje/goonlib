@@ -124,6 +124,7 @@ export default function App(): React.JSX.Element {
     loop: false,
     keepHistory: true,
     resumePosition: true,
+    resumeAfterPercent: 30,
     showContinue: true,
     resumeInSessions: true,
   })

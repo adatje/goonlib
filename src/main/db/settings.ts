@@ -7,7 +7,7 @@
  */
 
 import { safeStorage } from 'electron'
-import { IMAGE_SECONDS } from '@shared/types'
+import { IMAGE_SECONDS, RESUME_AFTER } from '@shared/types'
 import type { AiSettings, AiSettingsView, PlaybackPrefs, ToyPrefs } from '@shared/types'
 import { AI_DEFAULTS, normaliseAiSettings } from '../ai/settings-shape'
 import { DEFAULT_CACHE_CAP } from '../media/evict'
@@ -35,6 +35,7 @@ export const SETTING_SHOW_TAGS = 'playback.showTags'
 export const SETTING_LOOP = 'playback.loop'
 export const SETTING_KEEP_HISTORY = 'playback.keepHistory'
 export const SETTING_RESUME = 'playback.resumePosition'
+export const SETTING_RESUME_AFTER = 'playback.resumeAfterPercent'
 export const SETTING_SHOW_CONTINUE = 'playback.showContinue'
 export const SETTING_RESUME_SESSIONS = 'playback.resumeInSessions'
 export const SETTING_DUPLICATE_DISTANCE = 'duplicates.distance'
@@ -124,9 +125,17 @@ export function playbackPrefs(): PlaybackPrefs {
     loop: getSetting(SETTING_LOOP) === '1',
     keepHistory: getSetting(SETTING_KEEP_HISTORY) !== '0',
     resumePosition: getSetting(SETTING_RESUME) !== '0',
+    resumeAfterPercent: percent(getSetting(SETTING_RESUME_AFTER)),
     showContinue: getSetting(SETTING_SHOW_CONTINUE) !== '0',
     resumeInSessions: getSetting(SETTING_RESUME_SESSIONS) !== '0',
   }
+}
+
+/** A whole percentage within the allowed range; anything unreadable is the default. */
+function percent(value: unknown): number {
+  const share = Number(value ?? RESUME_AFTER.default)
+  if (!Number.isFinite(share)) return RESUME_AFTER.default
+  return Math.min(RESUME_AFTER.max, Math.max(RESUME_AFTER.min, Math.round(share)))
 }
 
 /** Whole seconds, held between the limits; anything unreadable is the default. */
@@ -173,6 +182,9 @@ export function setPlaybackPrefs(patch: Partial<PlaybackPrefs>): PlaybackPrefs {
     setSetting(SETTING_KEEP_HISTORY, patch.keepHistory ? '1' : '0')
   }
   if (patch.resumePosition !== undefined) setSetting(SETTING_RESUME, patch.resumePosition ? '1' : '0')
+  if (patch.resumeAfterPercent !== undefined) {
+    setSetting(SETTING_RESUME_AFTER, String(percent(patch.resumeAfterPercent)))
+  }
   if (patch.showContinue !== undefined) {
     setSetting(SETTING_SHOW_CONTINUE, patch.showContinue ? '1' : '0')
   }

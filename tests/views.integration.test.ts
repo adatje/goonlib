@@ -67,29 +67,38 @@ describe('where a video was left', () => {
   const HOUR = 60 * 60 * 1000
 
   it('keeps a position worth carrying on from', () => {
-    recordPosition(id, 5 * 60_000, HOUR, 1_000_000)
-    expect(positionOf(id, 1_000_000)).toBe(5 * 60_000)
-    expect(viewsOf(id).positionMs).toBe(5 * 60_000)
+    recordPosition(id, 20 * 60_000, HOUR, 0.3, 1_000_000)
+    expect(positionOf(id, 1_000_000)).toBe(20 * 60_000)
+    expect(viewsOf(id).positionMs).toBe(20 * 60_000)
   })
 
-  it('keeps nothing from the first few seconds', () => {
-    recordPosition(id, 5_000, HOUR)
-    expect(positionOf(id)).toBeNull()
+  it('measures "barely started" against the video own length', () => {
+    // Five minutes is nothing in an hour, and everything in a ten-minute clip.
+    recordPosition(id, 5 * 60_000, HOUR, 0.3, 1_000_000)
+    expect(positionOf(id, 1_000_000)).toBeNull()
+
+    recordPosition(id, 5 * 60_000, 10 * 60_000, 0.3, 1_000_000)
+    expect(positionOf(id, 1_000_000)).toBe(5 * 60_000)
+  })
+
+  it('keeps any position when asked for none', () => {
+    recordPosition(id, 2_000, HOUR, 0, 1_000_000)
+    expect(positionOf(id, 1_000_000)).toBe(2_000)
   })
 
   it('keeps nothing once it has been watched to the end', () => {
-    recordPosition(id, 5 * 60_000, HOUR, 1_000_000)
-    recordPosition(id, HOUR * 0.98, HOUR, 1_000_000)
+    recordPosition(id, 20 * 60_000, HOUR, 0.3, 1_000_000)
+    recordPosition(id, HOUR * 0.98, HOUR, 0.3, 1_000_000)
     expect(positionOf(id, 1_000_000)).toBeNull()
   })
 
   it('forgets a position left months ago', () => {
-    recordPosition(id, 5 * 60_000, HOUR, 1_000_000)
+    recordPosition(id, 20 * 60_000, HOUR, 0.3, 1_000_000)
     expect(positionOf(id, 1_000_000 + 40 * 24 * HOUR)).toBeNull()
   })
 
   it('lists what is part-watched, most recently left first', () => {
-    recordPosition(id, 5 * 60_000, HOUR, 2_000_000)
+    recordPosition(id, 20 * 60_000, HOUR, 0.3, 2_000_000)
     const row = continueWatching(10, 2_000_000)
     expect(row.map((item) => item.id)).toEqual([id])
 
