@@ -15,27 +15,89 @@ export function AppSettings(props: {
   const { playback } = props
 
   return (
-    <div className="toy__section">
-      <span className="settings__label">Media Player</span>
+    <>
+      <div className="toy__section">
+        <span className="settings__label">Media Player</span>
 
-      <ImageSeconds
-        value={playback.imageSeconds}
-        onChange={(imageSeconds) => props.onPlaybackChange({ imageSeconds })}
-      />
+        <ImageSeconds
+          value={playback.imageSeconds}
+          onChange={(imageSeconds) => props.onPlaybackChange({ imageSeconds })}
+        />
 
-      <Toggle
-        label="Play on open"
-        hint="Toggles whether to play videos on open by default."
-        checked={playback.playOnOpen}
-        onChange={(playOnOpen) => props.onPlaybackChange({ playOnOpen })}
-      />
+        <Toggle
+          label="Play on open"
+          hint="Toggles whether to play videos on open by default."
+          checked={playback.playOnOpen}
+          onChange={(playOnOpen) => props.onPlaybackChange({ playOnOpen })}
+        />
 
-      <Toggle
-        label="Shuffle as default"
-        hint="Globally enables shuffle=true as default when playing any media items."
-        checked={playback.shuffleDefault}
-        onChange={(shuffleDefault) => props.onPlaybackChange({ shuffleDefault })}
+        <Toggle
+          label="Shuffle as default"
+          hint="Globally enables shuffle=true as default when playing any media items."
+          checked={playback.shuffleDefault}
+          onChange={(shuffleDefault) => props.onPlaybackChange({ shuffleDefault })}
+        />
+
+
+        <Toggle
+          label="Show Meta data"
+          hint="Shows the open item's details beside it in the media player: file, size, dates, and how often and how long it has been watched."
+          checked={playback.showMetadata}
+          onChange={(showMetadata) => props.onPlaybackChange({ showMetadata })}
+        />
+
+        <Toggle
+          label="Show description"
+          hint="Part of what the viewer's description button shows: the description itself."
+          checked={playback.showCaption}
+          disabled={!playback.showDescription}
+          onChange={(showCaption) => props.onPlaybackChange({ showCaption })}
+        />
+
+        <Toggle
+          label="Show tags"
+          hint="The other part: the item's tags, over the media."
+          checked={playback.showTags}
+          disabled={!playback.showDescription}
+          onChange={(showTags) => props.onPlaybackChange({ showTags })}
+        />
+
+        <Toggle
+          label="Show EXIF data"
+          hint="Shows a photo's EXIF data, if it has any: camera, lens, settings and the date it was taken."
+          checked={playback.showExif}
+          onChange={(showExif) => props.onPlaybackChange({ showExif })}
+        />
+
+        <Toggle
+          label="Include Location"
+          hint="Whether to also include location information in shown EXIF data"
+          checked={playback.showLocation}
+          disabled={!playback.showExif}
+          onChange={(showLocation) => props.onPlaybackChange({ showLocation })}
+        />
+      </div>
+
+      <WatchHistory
+        playback={playback}
+        onPlaybackChange={props.onPlaybackChange}
+        onChanged={props.onChanged}
       />
+    </>
+  )
+}
+
+/** Watch history: what is remembered about what you have watched. */
+function WatchHistory(props: {
+  playback: PlaybackPrefs
+  onPlaybackChange: (patch: Partial<PlaybackPrefs>) => void
+  onChanged: () => void
+}): React.JSX.Element {
+  const { playback } = props
+
+  return (
+    <div className="settings__group toy__section">
+      <span className="settings__label">Watch history</span>
 
       <Toggle
         label="Keep watch history"
@@ -60,44 +122,6 @@ export function AppSettings(props: {
       />
 
       <ClearHistory onCleared={props.onChanged} />
-
-      <Toggle
-        label="Show Meta data"
-        hint="Shows the open item's details beside it in the media player: file, size, dates, and how often and how long it has been watched."
-        checked={playback.showMetadata}
-        onChange={(showMetadata) => props.onPlaybackChange({ showMetadata })}
-      />
-
-      <Toggle
-        label="Show description"
-        hint="Part of what the viewer's description button shows: the description itself."
-        checked={playback.showCaption}
-        disabled={!playback.showDescription}
-        onChange={(showCaption) => props.onPlaybackChange({ showCaption })}
-      />
-
-      <Toggle
-        label="Show tags"
-        hint="The other part: the item's tags, over the media."
-        checked={playback.showTags}
-        disabled={!playback.showDescription}
-        onChange={(showTags) => props.onPlaybackChange({ showTags })}
-      />
-
-      <Toggle
-        label="Show EXIF data"
-        hint="Shows a photo's EXIF data, if it has any: camera, lens, settings and the date it was taken."
-        checked={playback.showExif}
-        onChange={(showExif) => props.onPlaybackChange({ showExif })}
-      />
-
-      <Toggle
-        label="Include Location"
-        hint="Whether to also include location information in shown EXIF data"
-        checked={playback.showLocation}
-        disabled={!playback.showExif}
-        onChange={(showLocation) => props.onPlaybackChange({ showLocation })}
-      />
     </div>
   )
 }
