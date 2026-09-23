@@ -4306,3 +4306,58 @@ button.styling__reset:hover {
   font-size: 17px;
   line-height: 1;
 }
+
+/* The Filters button, lit while it is narrowing anything. */
+.toolbar__sort--on {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.toolbar__filter-count {
+  min-width: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Its panel: a menu, but with rows of chips rather than a list. */
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 300px;
+  max-height: 60vh;
+  padding: 12px;
+}
+
+.filters__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filters__title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.filters__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.filters__chips--tall {
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.filters__search {
+  padding: 5px 8px;
+  font-size: 12px;
+}

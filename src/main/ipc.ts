@@ -60,6 +60,7 @@ import {
   countPending,
   forgetMedia,
   getMedia,
+  listExtensions,
   listMedia,
   listMediaIds,
   relocateMedia,
@@ -145,6 +146,7 @@ export function registerIpc(): void {
     setRootEnabled(id, enabled),
   )
 
+  handle(IPC.libraryExtensions, (): Array<{ ext: string; count: number }> => listExtensions())
   handle(IPC.libraryStats, (): LibraryStats => libraryStats())
 
   handle(IPC.mediaList, (_event, query: MediaQuery): MediaPage =>

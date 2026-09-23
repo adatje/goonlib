@@ -9,6 +9,7 @@ import type {
 } from '@shared/types'
 import type { ProbeResult } from '../scan/probe'
 import { escapeLike } from './folders'
+import { DURATION_BANDS, SIZE_BANDS } from '@shared/types'
 import { getDb } from './index'
 
 /** The columns that map onto a MediaItem, in one place so the two never drift. */
@@ -402,6 +403,36 @@ function buildMediaQuery(query: Omit<MediaQuery, 'limit' | 'offset'>): {
     params.push(`${escapeLike(query.pathPrefix)}%`)
   }
 
+  // Every tag has to be there, not any of them: picking two tags means the
+  // things that carry both, which is what narrowing means everywhere else.
+  for (const tagId of query.tagIds ?? []) {
+    where.push('EXISTS (SELECT 1 FROM media_tags mt WHERE mt.media_id = m.id AND mt.tag_id = ?)')
+    params.push(tagId)
+  }
+
+  const exts = (query.exts ?? []).filter((ext) => typeof ext === 'string' && ext.length > 0)
+  if (exts.length > 0) {
+    where.push(`m.ext IN (${exts.map(() => '?').join(', ')})`)
+    params.push(...exts.map((ext) => ext.toLowerCase()))
+  }
+
+  const bands = (query.durations ?? []).map((band) => DURATION_BANDS[band]).filter(Boolean)
+  if (bands.length > 0) {
+    // A picture has no length, so asking about length excludes them.
+    where.push(
+      `(m.duration_ms IS NOT NULL AND (${bands
+        .map(() => '(m.duration_ms >= ? AND (? IS NULL OR m.duration_ms < ?))')
+        .join(' OR ')}))`,
+    )
+    for (const band of bands) params.push(band.from, band.to, band.to)
+  }
+
+  const sizes = (query.sizes ?? []).map((band) => SIZE_BANDS[band]).filter(Boolean)
+  if (sizes.length > 0) {
+    where.push(`(${sizes.map(() => '(m.size >= ? AND (? IS NULL OR m.size < ?))').join(' OR ')})`)
+    for (const band of sizes) params.push(band.from, band.to, band.to)
+  }
+
   if (query.directOnly) {
     // Nothing left after the prefix may contain a separator, which is exactly
     // "in this folder, not in one of its subfolders". Works with an empty
@@ -556,4 +587,17 @@ export function toFtsQuery(search: string | undefined): string | null {
   if (tokens.length === 0) return null
 
   return tokens.map((token) => `"${token.replace(/"/g, '""')}"*`).join(' ')
+}
+
+/** Every file type in the library, commonest first. */
+export function listExtensions(): Array<{ ext: string; count: number }> {
+  return getDb()
+    .prepare<[], { ext: string; count: number }>(
+      `SELECT m.ext AS ext, COUNT(*) AS count
+         FROM media m JOIN roots r ON r.id = m.root_id
+        WHERE m.missing = 0 AND r.enabled = 1 AND m.ext <> ''
+        GROUP BY m.ext
+        ORDER BY count DESC, m.ext`,
+    )
+    .all()
 }

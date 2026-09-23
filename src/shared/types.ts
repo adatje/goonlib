@@ -132,6 +132,27 @@ export interface FolderLocation {
   path: string
 }
 
+/**
+ * The bands the Filters panel offers, rather than numbers to type. The edges
+ * are here so the window and the database agree on what "medium" means.
+ */
+export type DurationBand = 'short' | 'medium' | 'long'
+export type SizeBand = 'small' | 'medium' | 'large'
+
+/** Short is under five minutes, long is over twenty. */
+export const DURATION_BANDS: Record<DurationBand, { from: number; to: number | null; label: string }> = {
+  short: { from: 0, to: 5 * 60_000, label: 'Short' },
+  medium: { from: 5 * 60_000, to: 20 * 60_000, label: 'Medium' },
+  long: { from: 20 * 60_000, to: null, label: 'Long' },
+}
+
+/** Small is under 100 MB, large is over a gigabyte. */
+export const SIZE_BANDS: Record<SizeBand, { from: number; to: number | null; label: string }> = {
+  small: { from: 0, to: 100 * 1024 * 1024, label: 'Small' },
+  medium: { from: 100 * 1024 * 1024, to: 1024 * 1024 * 1024, label: 'Medium' },
+  large: { from: 1024 * 1024 * 1024, to: null, label: 'Large' },
+}
+
 export interface MediaQuery {
   kind?: MediaKind | 'all'
   /** Free text matched against filename and path via FTS5. */
@@ -150,6 +171,14 @@ export interface MediaQuery {
   collectionId?: number
   /** Restrict to items carrying one tag, whoever applied it. */
   tagId?: number
+  /** Restrict to items carrying every one of these tags. */
+  tagIds?: number[]
+  /** Restrict to these file types, as extensions with the dot. */
+  exts?: string[]
+  /** Restrict to videos of these lengths. Any band set leaves images out. */
+  durations?: DurationBand[]
+  /** Restrict to files of these sizes. */
+  sizes?: SizeBand[]
   /** Restrict to favorited items. */
   favorite?: boolean
   sort?: MediaSort
@@ -809,6 +838,7 @@ export const IPC = {
   rootsRemove: 'roots:remove',
   rootsSetEnabled: 'roots:set-enabled',
   libraryStats: 'library:stats',
+  libraryExtensions: 'library:extensions',
   mediaList: 'media:list',
   mediaGet: 'media:get',
   foldersChildren: 'folders:children',
@@ -936,6 +966,8 @@ export interface GoonLibApi {
     /** One item by id, or null if it is not in the library. */
     get(id: number): Promise<MediaItem | null>
     list(query: MediaQuery): Promise<MediaPage>
+    /** Every file type in the library, commonest first, for the Filters panel. */
+    extensions(): Promise<Array<{ ext: string; count: number }>>
     /**
      * Every matching id in grid order, for selecting things the grid hasn't
      * loaded. Ids only, so this stays cheap on a large library.

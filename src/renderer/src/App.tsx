@@ -20,6 +20,8 @@ import { Duplicates } from './components/Duplicates'
 import { Lightbox } from './components/Lightbox'
 import { MediaGrid } from './components/MediaGrid'
 import { ContinueRow } from './components/ContinueRow'
+import { NO_FILTERS } from './components/Filters'
+import type { FilterSet } from './components/Filters'
 import { MediaMenu } from './components/MediaMenu'
 import type { MenuAt } from './components/MediaMenu'
 import { ScanBar } from './components/ScanBar'
@@ -72,6 +74,8 @@ export default function App(): React.JSX.Element {
   const [search, setSearch] = useState('')
   const [kind, setKind] = useState<MediaKind | 'all'>('all')
   const [sort, setSort] = useState<MediaSort>('added')
+  /** What the Filters panel is narrowing by. Cleared by its own button, not by a view change. */
+  const [chosen, setChosen] = useState<FilterSet>(NO_FILTERS)
   // Picking Shuffle, even again, deals a fresh order.
   const [shuffleSeed, setShuffleSeed] = useState(() => Math.floor(Math.random() * 2147483647))
   const chooseSort = useCallback((next: MediaSort) => {
@@ -174,9 +178,13 @@ export default function App(): React.JSX.Element {
       collectionId: collectionId ?? undefined,
       tagId: tagId ?? undefined,
       favorite: favorites || undefined,
+      tagIds: chosen.tagIds.length > 0 ? chosen.tagIds : undefined,
+      exts: chosen.exts.length > 0 ? chosen.exts : undefined,
+      durations: chosen.durations.length > 0 ? chosen.durations : undefined,
+      sizes: chosen.sizes.length > 0 ? chosen.sizes : undefined,
       seed: effectiveSort === 'shuffle' ? shuffleSeed : undefined,
     }),
-    [kind, search, effectiveSort, location, collectionId, tagId, favorites, narrowed, shuffleSeed],
+    [kind, search, effectiveSort, location, collectionId, tagId, favorites, narrowed, shuffleSeed, chosen],
   )
   const view = useLibrary(filters)
   const selection = useSelection(view)
@@ -1057,6 +1065,9 @@ export default function App(): React.JSX.Element {
               total={view.total}
               totalBytes={view.totalBytes}
               allowManualSort={collectionId !== null}
+              filters={chosen}
+              onFiltersChange={setChosen}
+              tags={tags}
               toy={toy}
               scraping={
                 scrape?.phase === 'fetching' || scrape?.phase === 'downloading'

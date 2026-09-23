@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { MediaKind, MediaSort } from '@shared/types'
+import type { MediaKind, MediaSort, Tag } from '@shared/types'
+import { Filters } from './Filters'
+import type { FilterSet } from './Filters'
 import { formatBytes, formatCount } from '../format'
 import type { ToyView } from '../state/useToy'
 import { ToyChip } from './ToyChip'
@@ -16,6 +18,10 @@ export interface ToolbarProps {
   totalBytes: number
   /** True when viewing a collection, which is the only context with a saved order. */
   allowManualSort?: boolean
+  /** What the grid is narrowed by, and everything it could be narrowed by. */
+  filters: FilterSet
+  onFiltersChange: (filters: FilterSet) => void
+  tags: Tag[]
   /** The toy, for the chip that stops it and runs a pattern. Only shown while one is connected. */
   toy: ToyView
   /** True while a thread download is already running. */
@@ -146,6 +152,8 @@ export function Toolbar(props: ToolbarProps): React.JSX.Element {
           </button>
         ))}
       </div>
+
+      <Filters filters={props.filters} onChange={props.onFiltersChange} tags={props.tags} />
 
       <SortMenu
         sort={props.sort}

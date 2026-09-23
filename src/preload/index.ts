@@ -65,6 +65,8 @@ const api: GoonLibApi = {
   library: {
     stats: (): Promise<LibraryStats> => ipcRenderer.invoke(IPC.libraryStats),
     list: (query: MediaQuery): Promise<MediaPage> => ipcRenderer.invoke(IPC.mediaList, query),
+    extensions: (): Promise<Array<{ ext: string; count: number }>> =>
+      ipcRenderer.invoke(IPC.libraryExtensions),
     get: (id: number): Promise<MediaItem | null> => ipcRenderer.invoke(IPC.mediaGet, id),
     ids: (query: Omit<MediaQuery, 'limit' | 'offset'>): Promise<number[]> =>
       ipcRenderer.invoke(IPC.mediaIds, query),
