@@ -4426,3 +4426,13 @@ button.styling__reset:hover {
   min-width: 110px;
   text-align: center;
 }
+
+/* The shortcuts button sits with Settings at the right of the footer. */
+.sidebar__help {
+  margin-left: auto;
+  margin-right: 4px;
+}
+
+.sidebar__foot > .sidebar__settings {
+  margin-left: 0;
+}

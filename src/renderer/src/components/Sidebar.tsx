@@ -9,7 +9,7 @@ import markSound5 from '../assets/mark-5.mp3'
 import scanSound from '../assets/scan.mp3'
 import { CollectionList } from './CollectionList'
 import { FolderTree } from './FolderTree'
-import { FolderIcon, LibraryIcon, ScanIcon, SourcesIcon } from './SidebarIcons'
+import { DescriptionIcon, FolderIcon, LibraryIcon, ScanIcon, SourcesIcon } from './SidebarIcons'
 import { SidebarSection } from './SidebarSection'
 import { TagList } from './TagList'
 import { GearIcon, HeartIcon } from './Toolbar'
@@ -44,6 +44,8 @@ export interface SidebarProps {
   scanning: boolean
   /** Looks for new, changed and removed files in every source. */
   onRescan: () => void
+  /** Opens the card listing every keyboard shortcut. */
+  onShowShortcuts: () => void
   /** Opens the Settings sheet — the toy, watching together, and AI. */
   onOpenSettings: () => void
   /** A session is running. Lights the gear, so sharing is never invisible. */
@@ -209,6 +211,16 @@ export function Sidebar(props: SidebarProps): React.JSX.Element {
           <ScanIcon />
           <span className="visually-hidden">{props.scanning ? 'Scanning' : 'Rescan'}</span>
         </button>
+        <button
+          type="button"
+          className="icon-button sidebar__help"
+          onClick={props.onShowShortcuts}
+          title="Keyboard shortcuts (?)"
+        >
+          <DescriptionIcon />
+          <span className="visually-hidden">Keyboard shortcuts</span>
+        </button>
+
         {/* The one way into Settings — the toy, watching together, and AI
             alike. It looks like every other icon here: the toy chip says what
             the toy is doing, so the gear does not colour itself for it. The

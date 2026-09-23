@@ -1076,6 +1076,7 @@ export default function App(): React.JSX.Element {
         onRenameTag={renameTag}
         onDeleteTag={deleteTag}
         // Someone at the door is the one thing worth jumping straight to.
+        onShowShortcuts={() => setShowKeys(true)}
         onOpenSettings={() =>
           openSettings(cowatch.session.knocking.length > 0 ? 'together' : undefined)
         }
