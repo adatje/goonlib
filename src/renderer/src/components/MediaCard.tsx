@@ -16,6 +16,9 @@ export interface MediaCardProps {
   onToggleFavorite?: (item: MediaItem) => void
   /** How far through this video was left, 0 to 1, drawn along the bottom. */
   progress?: number
+  /** Takes the card off whatever list it is in. Absent means no such button. */
+  onDismiss?: () => void
+  dismissTitle?: string
 }
 
 export function MediaCard({
@@ -27,6 +30,8 @@ export function MediaCard({
   onContextMenu,
   onToggleFavorite,
   progress,
+  onDismiss,
+  dismissTitle,
 }: MediaCardProps): React.JSX.Element {
   if (!item) {
     // The page covering this index hasn't arrived yet.
@@ -90,6 +95,23 @@ export function MediaCard({
         )}
 
         <HoverScrub item={item} />
+
+        {onDismiss ? (
+          <button
+            type="button"
+            className="card__heart card__dismiss"
+            // As with the heart: the card underneath must not open.
+            onClick={(event) => {
+              event.stopPropagation()
+              onDismiss()
+            }}
+            onKeyDown={(event) => event.stopPropagation()}
+            aria-label={dismissTitle ?? 'Remove'}
+            title={dismissTitle ?? 'Remove'}
+          >
+            ×
+          </button>
+        ) : null}
 
         {onToggleFavorite ? (
           <button

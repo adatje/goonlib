@@ -4270,9 +4270,27 @@ button.styling__reset:hover {
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
+}
+
+/*
+ * A pink rule between the row and the library, like the sidebar's, but a
+ * stronger pink: the content area behind it is darker than the sidebar.
+ */
+.continue__divider {
+  width: 60%;
+  height: 1px;
+  margin: 0 auto;
+  border: 0;
+  background: color-mix(in srgb, var(--icon) 60%, transparent);
 }
 
 .continue__card {
   flex: 0 0 180px;
+}
+
+/* Taking a card off a list, beside the heart and drawn like it. */
+.card__dismiss {
+  right: 38px;
+  font-size: 17px;
+  line-height: 1;
 }

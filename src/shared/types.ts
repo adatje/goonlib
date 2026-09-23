@@ -826,6 +826,7 @@ export const IPC = {
   mediaSetPosition: 'media:set-position',
   mediaContinue: 'media:continue',
   mediaClearHistory: 'media:clear-history',
+  mediaForgetPosition: 'media:forget-position',
   tagsList: 'tags:list',
   tagsCreate: 'tags:create',
   tagsRename: 'tags:rename',
@@ -1043,6 +1044,8 @@ export interface GoonLibApi {
     continueWatching(limit: number): Promise<MediaItem[]>
     /** Forgets every count, time watched and position. Resolves with the rows dropped. */
     clearHistory(): Promise<number>
+    /** Takes one video off Continue watching, leaving its counts alone. */
+    forgetPosition(mediaId: number): Promise<void>
   }
   ai: {
     settings(): Promise<AiSettingsView>

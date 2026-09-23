@@ -18,6 +18,7 @@ export function ContinueRow(props: {
   refreshKey: number
   onOpen: (mediaId: number) => void
   onContextMenu?: (mediaId: number, x: number, y: number) => void
+  onToggleFavorite?: (item: MediaItem) => void
 }): React.JSX.Element | null {
   const [items, setItems] = useState<Array<{ item: MediaItem; progress: number }>>([])
 
@@ -55,10 +56,19 @@ export function ContinueRow(props: {
               progress={progress}
               onOpen={() => props.onOpen(item.id)}
               onContextMenu={props.onContextMenu}
+              onToggleFavorite={props.onToggleFavorite}
+              dismissTitle="Take off Continue watching"
+              onDismiss={() => {
+                // Gone from the row at once; the place itself goes in the
+                // background, since nothing here depends on the answer.
+                setItems((current) => current.filter((entry) => entry.item.id !== item.id))
+                void window.goonlib.media.forgetPosition(item.id).catch(() => undefined)
+              }}
             />
           </div>
         ))}
       </div>
+      <hr className="continue__divider" />
     </section>
   )
 }

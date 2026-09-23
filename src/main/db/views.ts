@@ -124,6 +124,13 @@ export function continueWatching(limit: number, now = Date.now()): MediaItem[] {
   return rows.map(toMediaItemRow)
 }
 
+/** Forgets where one video was left, without touching its counts. */
+export function forgetPosition(mediaId: number): void {
+  getDb()
+    .prepare('UPDATE media_views SET position_ms = NULL, position_at = NULL WHERE media_id = ?')
+    .run(mediaId)
+}
+
 /** Forgets every count, time and position. */
 export function clearHistory(): number {
   return getDb().prepare('DELETE FROM media_views').run().changes

@@ -121,6 +121,8 @@ const api: GoonLibApi = {
     continueWatching: (limit: number): Promise<MediaItem[]> =>
       ipcRenderer.invoke(IPC.mediaContinue, limit),
     clearHistory: (): Promise<number> => ipcRenderer.invoke(IPC.mediaClearHistory),
+    forgetPosition: (mediaId: number): Promise<void> =>
+      ipcRenderer.invoke(IPC.mediaForgetPosition, mediaId),
   },
   tags: {
     list: (): Promise<Tag[]> => ipcRenderer.invoke(IPC.tagsList),

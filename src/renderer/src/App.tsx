@@ -1122,6 +1122,7 @@ export default function App(): React.JSX.Element {
               if (index !== null) openAt(index)
             }}
             onContextMenu={showContextMenu}
+            onToggleFavorite={toggleFavorite}
           />
         ) : null}
 

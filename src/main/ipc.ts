@@ -96,7 +96,15 @@ import { indexer } from './scan/indexer'
 import { scraper } from './scrape/scraper'
 import { toys } from './toy'
 import { readExif } from './media/exif'
-import { clearHistory, continueWatching, positionOf, recordPosition, recordView, viewsOf } from './db/views'
+import {
+  clearHistory,
+  continueWatching,
+  forgetPosition,
+  positionOf,
+  recordPosition,
+  recordView,
+  viewsOf,
+} from './db/views'
 import { themes } from './theme'
 import { trashHistory } from './trash'
 import type { TrashUndoResult } from '@shared/types'
@@ -383,6 +391,7 @@ export function registerIpc(): void {
     playbackPrefs().resumePosition ? continueWatching(Number(limit)) : [],
   )
   handle(IPC.mediaClearHistory, (): number => clearHistory())
+  handle(IPC.mediaForgetPosition, (_event, mediaId: number): void => forgetPosition(Number(mediaId)))
   ipcMain.on(IPC.mediaRecordView, (_event, mediaId: number, watchedMs: number) => {
     if (!playbackPrefs().keepHistory) return
     try {
