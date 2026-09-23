@@ -12,6 +12,16 @@ import { escapeLike } from './folders'
 import { getDb } from './index'
 
 /** The columns that map onto a MediaItem, in one place so the two never drift. */
+/** The same columns, for a query that joins from somewhere else. */
+export const MEDIA_COLUMNS_FOR_JOIN = `
+  m.id, m.root_id, m.rel_path, m.name, m.ext, m.kind, m.size, m.mtime,
+  m.width, m.height, m.duration_ms, m.vcodec, m.acodec, m.fps, m.playback_tier,
+  m.content_hash, m.phash,
+  m.probe_state, m.thumb_state, m.sprite_state, m.hash_state, m.classify_state,
+  m.sprite_frames, m.sprite_columns, m.sprite_cell_w, m.sprite_cell_h,
+  m.added_at, m.missing, m.favorited_at
+`
+
 const MEDIA_COLUMNS = `
   m.id, m.root_id, m.rel_path, m.name, m.ext, m.kind, m.size, m.mtime,
   m.width, m.height, m.duration_ms, m.vcodec, m.acodec, m.fps, m.playback_tier,
@@ -51,6 +61,11 @@ interface MediaRow {
   added_at: number
   missing: number
   favorited_at: number | null
+}
+
+/** A row of those columns as a MediaItem, for callers outside this file. */
+export function toMediaItemRow(row: unknown): MediaItem {
+  return toMediaItem(row as MediaRow)
 }
 
 function toMediaItem(row: MediaRow): MediaItem {

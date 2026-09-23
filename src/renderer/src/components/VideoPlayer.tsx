@@ -40,6 +40,11 @@ export interface VideoPlayerProps {
   autoplay?: boolean
   /** Repeat this video rather than ending, so nothing moves on. */
   loop?: boolean
+  /**
+   * Where to carry on from, in milliseconds. Applied once, as the video
+   * becomes playable, and only when it is far enough in to be worth it.
+   */
+  startAtMs?: number | null
   /** Set while a co-watching session is running. */
   coWatch?: PlayerCoWatch
   /**
@@ -93,6 +98,7 @@ export function VideoPlayer({
   handleRef,
   autoplay = true,
   loop = false,
+  startAtMs = null,
   onEnded,
   onReport,
   volume: savedVolume = 1,
@@ -198,6 +204,29 @@ export function VideoPlayer({
    * explicitly, and falling back to muted if sound is what was refused, is what
    * makes "autoplay next" need no input at all.
    */
+  // Carrying on where it was left. Done once per video, and only before
+  // anything else has moved the playhead — a seek of your own wins.
+  const resumed = useRef(false)
+  useEffect(() => {
+    resumed.current = false
+  }, [item.id])
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || resumed.current || startAtMs === null || status.kind !== 'ready') return
+
+    const seek = (): void => {
+      if (resumed.current) return
+      const seconds = startAtMs / 1000
+      if (!Number.isFinite(video.duration) || seconds >= video.duration) return
+      resumed.current = true
+      video.currentTime = seconds
+    }
+
+    if (video.readyState >= 1) seek()
+    else video.addEventListener('loadedmetadata', seek, { once: true })
+    return () => video.removeEventListener('loadedmetadata', seek)
+  }, [item.id, startAtMs, status.kind])
+
   const started = useRef(false)
   const start = useCallback(() => {
     const video = videoRef.current

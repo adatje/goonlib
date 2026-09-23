@@ -285,4 +285,17 @@ export const migrations: Migration[] = [
       ALTER TABLE collection_items ADD COLUMN source TEXT NOT NULL DEFAULT 'user';
     `,
   },
+  {
+    version: 10,
+    name: 'playback-position',
+    sql: /* sql */ `
+      -- Where a video was left, so it can be carried on rather than started
+      -- again. Beside the counts, which is the same row and the same lifetime.
+      ALTER TABLE media_views ADD COLUMN position_ms INTEGER;
+      ALTER TABLE media_views ADD COLUMN position_at INTEGER;
+
+      CREATE INDEX idx_media_views_position ON media_views(position_at)
+        WHERE position_ms IS NOT NULL;
+    `,
+  },
 ]

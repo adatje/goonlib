@@ -19,6 +19,7 @@ import { CoWatchBar } from './components/CoWatchBar'
 import { Duplicates } from './components/Duplicates'
 import { Lightbox } from './components/Lightbox'
 import { MediaGrid } from './components/MediaGrid'
+import { ContinueRow } from './components/ContinueRow'
 import { MediaMenu } from './components/MediaMenu'
 import type { MenuAt } from './components/MediaMenu'
 import { ScanBar } from './components/ScanBar'
@@ -121,6 +122,10 @@ export default function App(): React.JSX.Element {
     showCaption: true,
     showTags: true,
     loop: false,
+    keepHistory: true,
+    resumePosition: true,
+    showContinue: true,
+    resumeInSessions: true,
   })
 
   // The stored value is what lands in state, not the value we asked for, so a
@@ -624,6 +629,8 @@ export default function App(): React.JSX.Element {
   const closeViewer = useCallback(() => {
     setOpenIndex(null)
     setRoomItem(null)
+    // Whatever was watched has probably moved, or joined, the row.
+    setContinueKey((key) => key + 1)
   }, [])
 
   /** Opening from the grid or a menu, which watching along only allows for what is already playing. */
@@ -948,6 +955,9 @@ export default function App(): React.JSX.Element {
     [guard, refreshSidebar, tagId, view],
   )
 
+  /** Bumped to re-read Continue watching: after the viewer closes, and after a clear. */
+  const [continueKey, setContinueKey] = useState(0)
+
   /** Where the right-click menu is open, and on what. */
   const [menuAt, setMenuAt] = useState<MenuAt | null>(null)
 
@@ -1090,6 +1100,30 @@ export default function App(): React.JSX.Element {
           />
         ) : null}
 
+        {/* Only the plain library: a narrowed view is a search for something
+            particular, and this row would be in the way of it. */}
+        {mode === 'library' &&
+        playback.showContinue &&
+        playback.resumePosition &&
+        !narrowed &&
+        collectionId === null &&
+        tagId === null &&
+        !favorites &&
+        location === null &&
+        search === '' &&
+        // Videos have to be among what the grid is showing, since that is how
+        // the viewer opens one.
+        kind !== 'image' ? (
+          <ContinueRow
+            refreshKey={continueKey}
+            onOpen={(mediaId) => {
+              const index = view.indexOf(mediaId)
+              if (index !== null) openAt(index)
+            }}
+            onContextMenu={showContextMenu}
+          />
+        ) : null}
+
         {mode === 'library' ? (
           <MediaGrid
             view={view}
@@ -1195,6 +1229,7 @@ export default function App(): React.JSX.Element {
             // Auto-sorting creates collections as it runs, so the sidebar is
             // stale the moment a classification pass starts.
             void refreshSidebar()
+            setContinueKey((key) => key + 1)
             view.refresh()
           }}
         />

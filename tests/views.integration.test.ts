@@ -17,7 +17,9 @@ vi.mock('electron', () => ({
 const { initDb, closeDb, getDb } = await import('../src/main/db')
 const { addRoot } = await import('../src/main/db/queries')
 const { upsertMediaBatch } = await import('../src/main/db/media')
-const { recordView, viewsOf } = await import('../src/main/db/views')
+const { recordView, viewsOf, recordPosition, positionOf, continueWatching, clearHistory } = await import(
+  '../src/main/db/views'
+)
 
 let id: number
 
@@ -39,13 +41,13 @@ afterAll(async () => {
 
 describe('views', () => {
   it('starts at nothing', () => {
-    expect(viewsOf(id)).toEqual({ viewCount: 0, watchMs: 0, lastViewedAt: null })
+    expect(viewsOf(id)).toEqual({ viewCount: 0, watchMs: 0, lastViewedAt: null, positionMs: null })
   })
 
   it('counts each view and adds up the time', () => {
     recordView(id, 5_000, 1000)
     recordView(id, 2_500, 2000)
-    expect(viewsOf(id)).toEqual({ viewCount: 2, watchMs: 7_500, lastViewedAt: 2000 })
+    expect(viewsOf(id)).toEqual({ viewCount: 2, watchMs: 7_500, lastViewedAt: 2000, positionMs: null })
   })
 
   it('holds one view to a day, and ignores nonsense', () => {
@@ -58,5 +60,41 @@ describe('views', () => {
   it('does nothing for an item that is not there', () => {
     recordView(999_999, 1000)
     expect(viewsOf(999_999).viewCount).toBe(0)
+  })
+})
+
+describe('where a video was left', () => {
+  const HOUR = 60 * 60 * 1000
+
+  it('keeps a position worth carrying on from', () => {
+    recordPosition(id, 5 * 60_000, HOUR, 1_000_000)
+    expect(positionOf(id, 1_000_000)).toBe(5 * 60_000)
+    expect(viewsOf(id).positionMs).toBe(5 * 60_000)
+  })
+
+  it('keeps nothing from the first few seconds', () => {
+    recordPosition(id, 5_000, HOUR)
+    expect(positionOf(id)).toBeNull()
+  })
+
+  it('keeps nothing once it has been watched to the end', () => {
+    recordPosition(id, 5 * 60_000, HOUR, 1_000_000)
+    recordPosition(id, HOUR * 0.98, HOUR, 1_000_000)
+    expect(positionOf(id, 1_000_000)).toBeNull()
+  })
+
+  it('forgets a position left months ago', () => {
+    recordPosition(id, 5 * 60_000, HOUR, 1_000_000)
+    expect(positionOf(id, 1_000_000 + 40 * 24 * HOUR)).toBeNull()
+  })
+
+  it('lists what is part-watched, most recently left first', () => {
+    recordPosition(id, 5 * 60_000, HOUR, 2_000_000)
+    const row = continueWatching(10, 2_000_000)
+    expect(row.map((item) => item.id)).toEqual([id])
+
+    clearHistory()
+    expect(continueWatching(10, 2_000_000)).toEqual([])
+    expect(viewsOf(id).viewCount).toBe(0)
   })
 })

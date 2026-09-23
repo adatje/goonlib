@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CustomPattern, PatternId } from '@shared/toy'
 import { customIdOf, customPatternId, TOY_PATTERNS } from '@shared/toy'
 import { PatternEditor } from './PatternEditor'
-import type { ToyPrefs, ToyScriptState, ToyStatus } from '@shared/types'
+import type { PlaybackPrefs, ToyPrefs, ToyScriptState, ToyStatus } from '@shared/types'
 import type { CoWatchView } from '../state/useCoWatch'
 import type { ToyView } from '../state/useToy'
 import { CoWatchSection, SessionName } from './CoWatchPanel'
@@ -12,6 +12,9 @@ import type { SheetTab } from './TabPanel'
 export interface ToySectionsProps {
   toy: ToyView
   cowatch: CoWatchView
+  /** The player's preferences, for the one session setting that belongs here. */
+  playback: PlaybackPrefs
+  onPlaybackChange: (patch: Partial<PlaybackPrefs>) => void
   /** Whether a co-watching session is running, so the guest settings can say so. */
   sharing: boolean
   /** Which tab of the Settings sheet is showing. */
@@ -28,7 +31,14 @@ const TOY_TABS: SheetTab[] = ['controls', 'solo', 'patterns', 'together']
  * here and never moves: on any toy tab, the place to press to make it stop is
  * the same place.
  */
-export function ToySections({ toy, cowatch, sharing, tab }: ToySectionsProps): React.JSX.Element {
+export function ToySections({
+  toy,
+  cowatch,
+  sharing,
+  tab,
+  playback,
+  onPlaybackChange,
+}: ToySectionsProps): React.JSX.Element {
   const { status, prefs } = toy
   const ready = status.engine === 'ready'
   const onToyTab = TOY_TABS.includes(tab)
@@ -82,6 +92,12 @@ export function ToySections({ toy, cowatch, sharing, tab }: ToySectionsProps): R
         <Together toy={toy} sharing={sharing} />
         <div className="settings__group">
           <SessionName />
+          <Switch
+            label="Start where you left off"
+            hint="Opening something in a session starts everyone at your own playback position, rather than at the beginning."
+            checked={playback.resumeInSessions}
+            onChange={(resumeInSessions) => onPlaybackChange({ resumeInSessions })}
+          />
         </div>
         <div className="settings__group">
           <CoWatchSection cowatch={cowatch} />

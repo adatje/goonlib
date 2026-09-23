@@ -233,7 +233,11 @@ export function SettingsSheet(props: SettingsSheetProps): React.JSX.Element {
               </div>
             ) : null}
             <TabPanel id="app" tab={tab}>
-              <AppSettings playback={props.playback} onPlaybackChange={props.onPlaybackChange} />
+              <AppSettings
+                playback={props.playback}
+                onPlaybackChange={props.onPlaybackChange}
+                onChanged={props.onChanged}
+              />
             </TabPanel>
             <TabPanel id="styling" tab={tab}>
               <AppStyling active={tab === 'styling'} />
@@ -241,6 +245,8 @@ export function SettingsSheet(props: SettingsSheetProps): React.JSX.Element {
             <ToySections
               toy={props.toy}
               cowatch={props.cowatch}
+              playback={props.playback}
+              onPlaybackChange={props.onPlaybackChange}
               sharing={sharing}
               tab={tab}
             />

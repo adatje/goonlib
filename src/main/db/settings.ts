@@ -33,6 +33,10 @@ export const SETTING_SHOW_DESCRIPTION = 'playback.showDescription'
 export const SETTING_SHOW_CAPTION = 'playback.showCaption'
 export const SETTING_SHOW_TAGS = 'playback.showTags'
 export const SETTING_LOOP = 'playback.loop'
+export const SETTING_KEEP_HISTORY = 'playback.keepHistory'
+export const SETTING_RESUME = 'playback.resumePosition'
+export const SETTING_SHOW_CONTINUE = 'playback.showContinue'
+export const SETTING_RESUME_SESSIONS = 'playback.resumeInSessions'
 export const SETTING_DUPLICATE_DISTANCE = 'duplicates.distance'
 export const SETTING_TOY = 'toy.prefs'
 export const SETTING_COWATCH_NAME = 'cowatch.hostName'
@@ -118,6 +122,10 @@ export function playbackPrefs(): PlaybackPrefs {
     showCaption: getSetting(SETTING_SHOW_CAPTION) !== '0',
     showTags: getSetting(SETTING_SHOW_TAGS) !== '0',
     loop: getSetting(SETTING_LOOP) === '1',
+    keepHistory: getSetting(SETTING_KEEP_HISTORY) !== '0',
+    resumePosition: getSetting(SETTING_RESUME) !== '0',
+    showContinue: getSetting(SETTING_SHOW_CONTINUE) !== '0',
+    resumeInSessions: getSetting(SETTING_RESUME_SESSIONS) !== '0',
   }
 }
 
@@ -161,6 +169,16 @@ export function setPlaybackPrefs(patch: Partial<PlaybackPrefs>): PlaybackPrefs {
   }
   if (patch.showTags !== undefined) setSetting(SETTING_SHOW_TAGS, patch.showTags ? '1' : '0')
   if (patch.loop !== undefined) setSetting(SETTING_LOOP, patch.loop ? '1' : '0')
+  if (patch.keepHistory !== undefined) {
+    setSetting(SETTING_KEEP_HISTORY, patch.keepHistory ? '1' : '0')
+  }
+  if (patch.resumePosition !== undefined) setSetting(SETTING_RESUME, patch.resumePosition ? '1' : '0')
+  if (patch.showContinue !== undefined) {
+    setSetting(SETTING_SHOW_CONTINUE, patch.showContinue ? '1' : '0')
+  }
+  if (patch.resumeInSessions !== undefined) {
+    setSetting(SETTING_RESUME_SESSIONS, patch.resumeInSessions ? '1' : '0')
+  }
   return playbackPrefs()
 }
 

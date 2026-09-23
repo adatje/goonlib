@@ -96,7 +96,7 @@ import { indexer } from './scan/indexer'
 import { scraper } from './scrape/scraper'
 import { toys } from './toy'
 import { readExif } from './media/exif'
-import { recordView, viewsOf } from './db/views'
+import { clearHistory, continueWatching, positionOf, recordPosition, recordView, viewsOf } from './db/views'
 import { themes } from './theme'
 import { trashHistory } from './trash'
 import type { TrashUndoResult } from '@shared/types'
@@ -360,7 +360,26 @@ export function registerIpc(): void {
   )
 
   handle(IPC.mediaViews, (_event, mediaId: number): MediaViews => viewsOf(Number(mediaId)))
+
+  // Both sides of a position are gated here, not in the window: with the
+  // setting off nothing is written and nothing is offered, whatever asks.
+  handle(IPC.mediaPosition, (_event, mediaId: number): number | null =>
+    playbackPrefs().resumePosition ? positionOf(Number(mediaId)) : null,
+  )
+  ipcMain.on(IPC.mediaSetPosition, (_event, mediaId: number, positionMs: number, durationMs: number) => {
+    if (!playbackPrefs().resumePosition) return
+    try {
+      recordPosition(Number(mediaId), Number(positionMs), Number(durationMs))
+    } catch (err) {
+      console.error('[views] could not note a position:', err)
+    }
+  })
+  handle(IPC.mediaContinue, (_event, limit: number): MediaItem[] =>
+    playbackPrefs().resumePosition ? continueWatching(Number(limit)) : [],
+  )
+  handle(IPC.mediaClearHistory, (): number => clearHistory())
   ipcMain.on(IPC.mediaRecordView, (_event, mediaId: number, watchedMs: number) => {
+    if (!playbackPrefs().keepHistory) return
     try {
       recordView(Number(mediaId), Number(watchedMs))
     } catch (err) {

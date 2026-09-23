@@ -266,6 +266,14 @@ export interface PlaybackPrefs {
   showTags: boolean
   /** The open item repeats instead of the viewer moving on. */
   loop: boolean
+  /** Count views and time watched. Off, nothing new is recorded. */
+  keepHistory: boolean
+  /** Note where a video was left, and carry on from there next time. */
+  resumePosition: boolean
+  /** Show the Continue watching row above the library. */
+  showContinue: boolean
+  /** Opening something in a Watch Together session starts at the host's position. */
+  resumeInSessions: boolean
 }
 
 /** The range Image autoplay timer is held to, in seconds. */
@@ -479,6 +487,8 @@ export interface MediaViews {
   viewCount: number
   watchMs: number
   lastViewedAt: number | null
+  /** Where a video was left, or null when there is nothing to carry on from. */
+  positionMs: number | null
 }
 
 /** What a photo's EXIF says, read when asked and never stored. */
@@ -804,6 +814,10 @@ export const IPC = {
   mediaViews: 'media:views',
   mediaRecordView: 'media:record-view',
   mediaExif: 'media:exif',
+  mediaPosition: 'media:position',
+  mediaSetPosition: 'media:set-position',
+  mediaContinue: 'media:continue',
+  mediaClearHistory: 'media:clear-history',
   tagsList: 'tags:list',
   tagsCreate: 'tags:create',
   tagsRename: 'tags:rename',
@@ -1013,6 +1027,14 @@ export interface GoonLibApi {
     recordView(mediaId: number, watchedMs: number): void
     /** A photo's EXIF, or null when it has none. */
     exif(mediaId: number): Promise<MediaExif | null>
+    /** Where to carry a video on from, or null. */
+    position(mediaId: number): Promise<number | null>
+    /** Notes where a video is now. Fire and forget. */
+    setPosition(mediaId: number, positionMs: number, durationMs: number): void
+    /** Videos left part-way through, most recently left first. */
+    continueWatching(limit: number): Promise<MediaItem[]>
+    /** Forgets every count, time watched and position. Resolves with the rows dropped. */
+    clearHistory(): Promise<number>
   }
   ai: {
     settings(): Promise<AiSettingsView>

@@ -46,6 +46,10 @@ const DEFAULTS = {
   showCaption: true,
   showTags: true,
   loop: false,
+  keepHistory: true,
+  resumePosition: true,
+  showContinue: true,
+  resumeInSessions: true,
 }
 
 describe('playback preference', () => {

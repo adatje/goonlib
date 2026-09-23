@@ -14,6 +14,8 @@ export interface MediaCardProps {
   onContextMenu?: (mediaId: number, x: number, y: number) => void
   /** The heart in the corner. Absent means the card shows no heart at all. */
   onToggleFavorite?: (item: MediaItem) => void
+  /** How far through this video was left, 0 to 1, drawn along the bottom. */
+  progress?: number
 }
 
 export function MediaCard({
@@ -24,6 +26,7 @@ export function MediaCard({
   selected = false,
   onContextMenu,
   onToggleFavorite,
+  progress,
 }: MediaCardProps): React.JSX.Element {
   if (!item) {
     // The page covering this index hasn't arrived yet.
@@ -112,6 +115,13 @@ export function MediaCard({
         ) : null}
 
         {item.missing ? <span className="card__badge card__badge--warn">missing</span> : null}
+
+        {/* How far it was watched, for something left part-way through. */}
+        {progress !== undefined && progress > 0 ? (
+          <span className="card__progress" aria-hidden="true">
+            <span className="card__progress-fill" style={{ width: `${Math.min(100, progress * 100)}%` }} />
+          </span>
+        ) : null}
       </div>
 
       <figcaption className="card__name">{item.name}</figcaption>

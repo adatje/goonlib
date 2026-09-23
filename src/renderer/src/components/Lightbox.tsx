@@ -87,6 +87,8 @@ function hasTag(tags: Tag[], labels: MediaLabel[], tagId: number): boolean {
 export function Lightbox(props: LightboxProps): React.JSX.Element {
   const { item, onClose, onNavigate } = props
   const playerRef = useRef<VideoPlayerHandle | null>(null)
+  /** The open video's length, for deciding whether a position is worth keeping. */
+  const durationRef = useRef(0)
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [labels, setLabels] = useState<MediaLabel[]>([])
   const [caption, setCaption] = useState<string | null>(null)
@@ -106,6 +108,25 @@ export function Lightbox(props: LightboxProps): React.JSX.Element {
   // control moves everyone along; watching along, the room decides.
   const imageSeconds = props.playback.imageSeconds
   const drivesRoom = !props.coWatch || props.coWatch.inControl
+  // Where this video was left, asked for once as it opens. Null while the
+  // answer is still coming, which is why the player waits for it.
+  const [startAt, setStartAt] = useState<number | null>(null)
+  useEffect(() => {
+    setStartAt(null)
+    if (item.kind !== 'video') return
+    let live = true
+    void window.goonlib.media
+      .position(item.id)
+      .then((position) => {
+        if (live) setStartAt(props.coWatch && !props.playback.resumeInSessions ? null : position)
+      })
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the session object changes every render
+  }, [item.id, item.kind, props.coWatch !== undefined, props.playback.resumeInSessions])
+
   // Held in a ref: the parent hands down a new navigate on most renders, and
   // the timer must not start over every time it does.
   const navigateRef = useRef(onNavigate)
@@ -606,12 +627,20 @@ export function Lightbox(props: LightboxProps): React.JSX.Element {
               console.log('[viewer] video ended; autoplay is', props.playback.autoplay)
               if (props.playback.autoplay) advance()
             }}
-            onReport={window.goonlib.toy.playback}
-            underControls={
-              props.toy.live
-                ? (clock) => <ToyBar toy={props.toy} mediaId={item.id} clock={clock} />
-                : undefined
-            }
+            startAtMs={startAt}
+            onReport={(report) => {
+              window.goonlib.toy.playback(report)
+              // Noted as it plays, so a crash or a quit still leaves the place.
+              if (report.mediaId !== null && report.playing) {
+                window.goonlib.media.setPosition(report.mediaId, report.positionMs, durationRef.current)
+              }
+            }}
+            underControls={(clock) => {
+              // The length is only known once the video has loaded, and a
+              // position is judged against it.
+              durationRef.current = Math.round(clock.duration * 1000)
+              return props.toy.live ? <ToyBar toy={props.toy} mediaId={item.id} clock={clock} /> : null
+            }}
           />
         ) : (
           <ImageViewer

@@ -9,6 +9,8 @@ import type { PlaybackPrefs } from '@shared/types'
 export function AppSettings(props: {
   playback: PlaybackPrefs
   onPlaybackChange: (patch: Partial<PlaybackPrefs>) => void
+  /** Fired after the history is cleared, so the library drops what it showed. */
+  onChanged: () => void
 }): React.JSX.Element {
   const { playback } = props
 
@@ -34,6 +36,30 @@ export function AppSettings(props: {
         checked={playback.shuffleDefault}
         onChange={(shuffleDefault) => props.onPlaybackChange({ shuffleDefault })}
       />
+
+      <Toggle
+        label="Keep watch history"
+        hint="Counts how often each item is opened and how long it is watched for."
+        checked={playback.keepHistory}
+        onChange={(keepHistory) => props.onPlaybackChange({ keepHistory })}
+      />
+
+      <Toggle
+        label="Remember playback position"
+        hint="Notes where a video was left and carries on from there next time. A video watched to the end starts fresh."
+        checked={playback.resumePosition}
+        onChange={(resumePosition) => props.onPlaybackChange({ resumePosition })}
+      />
+
+      <Toggle
+        label="Show Continue watching"
+        hint="A row of part-watched videos above the library."
+        checked={playback.showContinue}
+        disabled={!playback.resumePosition}
+        onChange={(showContinue) => props.onPlaybackChange({ showContinue })}
+      />
+
+      <ClearHistory onCleared={props.onChanged} />
 
       <Toggle
         label="Show Meta data"
@@ -96,6 +122,59 @@ function Toggle(props: {
         <span className="switch__hint">{props.hint}</span>
       </span>
     </label>
+  )
+}
+
+/**
+ * Forgets every count, time watched and position, after asking. Separate from
+ * the switch above it: turning recording off should not throw away what is
+ * already there, and throwing it away should not be a side effect of a switch.
+ */
+function ClearHistory({ onCleared }: { onCleared: () => void }): React.JSX.Element {
+  const [confirming, setConfirming] = useState(false)
+  const [gone, setGone] = useState<number | null>(null)
+
+  return (
+    <div className="settings__row settings__row--tight">
+      {confirming ? (
+        <>
+          <button
+            type="button"
+            className="button button--danger"
+            onClick={() => {
+              setConfirming(false)
+              void window.goonlib.media
+                .clearHistory()
+                .then((rows) => {
+                  setGone(rows)
+                  onCleared()
+                })
+                .catch(() => undefined)
+            }}
+          >
+            Really clear?
+          </button>
+          <button type="button" className="button button--quiet" onClick={() => setConfirming(false)}>
+            Cancel
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          className="button button--quiet"
+          onClick={() => {
+            setGone(null)
+            setConfirming(true)
+          }}
+          title="Forget every count, time watched and playback position"
+        >
+          Clear watch history
+        </button>
+      )}
+      {gone !== null ? (
+        <span className="muted">{gone === 0 ? 'Nothing to clear' : `Cleared ${gone}`}</span>
+      ) : null}
+    </div>
   )
 }
 

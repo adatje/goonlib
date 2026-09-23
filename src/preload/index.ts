@@ -114,6 +114,13 @@ const api: GoonLibApi = {
     recordView: (mediaId: number, watchedMs: number): void =>
       ipcRenderer.send(IPC.mediaRecordView, mediaId, watchedMs),
     exif: (mediaId: number): Promise<MediaExif | null> => ipcRenderer.invoke(IPC.mediaExif, mediaId),
+    position: (mediaId: number): Promise<number | null> =>
+      ipcRenderer.invoke(IPC.mediaPosition, mediaId),
+    setPosition: (mediaId: number, positionMs: number, durationMs: number): void =>
+      ipcRenderer.send(IPC.mediaSetPosition, mediaId, positionMs, durationMs),
+    continueWatching: (limit: number): Promise<MediaItem[]> =>
+      ipcRenderer.invoke(IPC.mediaContinue, limit),
+    clearHistory: (): Promise<number> => ipcRenderer.invoke(IPC.mediaClearHistory),
   },
   tags: {
     list: (): Promise<Tag[]> => ipcRenderer.invoke(IPC.tagsList),
