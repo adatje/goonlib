@@ -74,7 +74,14 @@ export function CollectionList(props: CollectionListProps): React.JSX.Element {
                     onDoubleClick={() => setEditingId(collection.id)}
                     title={`${collection.name} - double-click to rename`}
                   >
-                    <span className="collection__label">{collection.name}</span>
+                    <span className="collection__label">
+                      {collection.name}
+                      {collection.count > 0 && collection.aiCount === collection.count ? (
+                        <span className="tag__ai" aria-label="filed by AI">
+                          ai
+                        </span>
+                      ) : null}
+                    </span>
                     <span className="collection__count">{formatCount(collection.count)}</span>
                   </button>
                   <button

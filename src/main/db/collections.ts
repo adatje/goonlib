@@ -20,6 +20,7 @@ interface CollectionRow {
   cover_media_id: number | null
   created_at: number
   count: number
+  ai_count: number
 }
 
 function toCollection(row: CollectionRow): Collection {
@@ -29,6 +30,7 @@ function toCollection(row: CollectionRow): Collection {
     coverMediaId: row.cover_media_id,
     createdAt: row.created_at,
     count: row.count,
+    aiCount: row.ai_count,
   }
 }
 
@@ -36,7 +38,8 @@ export function listCollections(): Collection[] {
   const rows = getDb()
     .prepare<[], CollectionRow>(
       `SELECT c.id, c.name, c.cover_media_id, c.created_at,
-              COUNT(ci.media_id) AS count
+              COUNT(ci.media_id) AS count,
+              COALESCE(SUM(ci.source = 'ai'), 0) AS ai_count
          FROM collections c
          LEFT JOIN collection_items ci ON ci.collection_id = c.id
         GROUP BY c.id
@@ -51,7 +54,8 @@ export function getCollection(id: number): Collection | null {
   const row = getDb()
     .prepare<[number], CollectionRow>(
       `SELECT c.id, c.name, c.cover_media_id, c.created_at,
-              COUNT(ci.media_id) AS count
+              COUNT(ci.media_id) AS count,
+              COALESCE(SUM(ci.source = 'ai'), 0) AS ai_count
          FROM collections c
          LEFT JOIN collection_items ci ON ci.collection_id = c.id
         WHERE c.id = ?
@@ -116,7 +120,12 @@ export function deleteCollection(id: number): void {
  * Appends media to the end of a collection. Items already present are left where
  * they are rather than jumping to the end.
  */
-export function addToCollection(collectionId: number, mediaIds: number[]): number {
+/** `source` says who filed these: you, or the classifier sorting as it scans. */
+export function addToCollection(
+  collectionId: number,
+  mediaIds: number[],
+  source: 'user' | 'ai' = 'user',
+): number {
   if (mediaIds.length === 0) return 0
 
   const db = getDb()
@@ -129,15 +138,17 @@ export function addToCollection(collectionId: number, mediaIds: number[]): numbe
   let position = nextPosition?.next ?? 1
 
   const insert = db.prepare(
-    `INSERT INTO collection_items (collection_id, media_id, position)
-     VALUES (?, ?, ?)
-     ON CONFLICT (collection_id, media_id) DO NOTHING`,
+    `INSERT INTO collection_items (collection_id, media_id, position, source)
+     VALUES (?, ?, ?, ?)
+     -- Filing by hand what the classifier filed makes it yours.
+     ON CONFLICT (collection_id, media_id) DO UPDATE SET
+       source = CASE WHEN excluded.source = 'user' THEN 'user' ELSE collection_items.source END`,
   )
 
   const addAll = db.transaction((ids: number[]) => {
     let added = 0
     for (const mediaId of ids) {
-      const result = insert.run(collectionId, mediaId, position)
+      const result = insert.run(collectionId, mediaId, position, source)
       if (result.changes > 0) {
         added += 1
         position += 1

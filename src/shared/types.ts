@@ -93,6 +93,11 @@ export interface Collection {
   coverMediaId: number | null
   createdAt: number
   count: number
+  /**
+   * How many of those the classifier filed rather than you. Equal to `count`
+   * means nothing here was filed by hand — the same mark tags carry.
+   */
+  aiCount: number
 }
 
 export interface Tag {

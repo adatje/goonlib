@@ -74,7 +74,7 @@ function autoSort(mediaId: number, labels: ScoredLabel[], minConfidence: number)
 
     try {
       const collection = findOrCreateCollection(entry.label)
-      addToCollection(collection.id, [mediaId])
+      addToCollection(collection.id, [mediaId], 'ai')
     } catch (err) {
       // One bad label shouldn't cost the item its other labels, which are
       // already saved by this point.

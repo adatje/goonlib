@@ -275,4 +275,14 @@ export const migrations: Migration[] = [
       );
     `,
   },
+  {
+    version: 9,
+    name: 'collection-item-source',
+    sql: /* sql */ `
+      -- Who filed an item under a collection, the way tags already record it,
+      -- so a collection the classifier filled can say so. Everything already
+      -- here was filed by hand, which is what the default says.
+      ALTER TABLE collection_items ADD COLUMN source TEXT NOT NULL DEFAULT 'user';
+    `,
+  },
 ]
