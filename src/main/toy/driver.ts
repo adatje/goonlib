@@ -52,11 +52,21 @@ export interface MixInput {
   manual: RunningManual | null
   /** Already limited to the host's guest ceiling. */
   guestLevel: number
+  /**
+   * A level being tried out from the settings, which is exactly what it says:
+   * it is not scaled by Intensity, because Intensity is usually the very thing
+   * being set. Null when nothing is being previewed.
+   */
+  preview?: number | null
 }
 
 /** How strongly every vibrating motor should run at `now`, from 0 to 1. */
 export function mix(input: MixInput, now: number): number {
   if (!input.armed) return 0
+
+  // A preview is the whole output while it lasts: you are feeling one number,
+  // not a mix, and it is the number on the slider under your finger.
+  if (input.preview !== null && input.preview !== undefined) return clamp01(input.preview)
 
   // A video that is playing has the toy: its script, or the curve from its
   // sound, is what you came for. A pattern of yours waits rather than running

@@ -143,6 +143,8 @@ const api: GoonLibApi = {
     test: (): Promise<AiTestResult> => ipcRenderer.invoke(IPC.aiTest),
     models: (): Promise<string[]> => ipcRenderer.invoke(IPC.aiModels),
     reclassify: (all: boolean): Promise<number> => ipcRenderer.invoke(IPC.aiReclassify, all),
+    reset: (): Promise<{ tags: number; collections: number; items: number } | null> =>
+      ipcRenderer.invoke(IPC.aiReset),
   },
   scrape: {
     start: (url: string): Promise<ScrapeProgress> => ipcRenderer.invoke(IPC.scrapeStart, url),
@@ -246,6 +248,7 @@ const api: GoonLibApi = {
     // A send rather than an invoke: the player reports several times a second
     // and has no use for an answer.
     playback: (state: ToyPlayback): void => ipcRenderer.send(IPC.toyPlayback, state),
+    preview: (level: number | null): void => ipcRenderer.send(IPC.toyPreview, level),
     prefs: (): Promise<ToyPrefs> => ipcRenderer.invoke(IPC.toyPrefs),
     setPrefs: (patch: Partial<ToyPrefs>): Promise<ToyPrefs> =>
       ipcRenderer.invoke(IPC.toySetPrefs, patch),

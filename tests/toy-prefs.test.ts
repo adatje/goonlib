@@ -68,3 +68,11 @@ describe('toy preferences', () => {
     expect(toyPrefs().guests).toBe(false)
   })
 })
+
+describe('previewing an intensity', () => {
+  it('is off until turned on, and remembered', () => {
+    expect(toyPrefs().preview).toBe(false)
+    expect(setToyPrefs({ preview: true }).preview).toBe(true)
+    expect(toyPrefs().preview).toBe(true)
+  })
+})

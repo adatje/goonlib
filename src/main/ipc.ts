@@ -55,7 +55,7 @@ import {
 import { setFavorite } from './db/favorites'
 import { findExactDuplicates, findNearDuplicates } from './db/duplicates'
 import { listChildFolders } from './db/folders'
-import { listAnnotations, queueForClassification } from './db/labels'
+import { listAnnotations, queueForClassification, resetClassification } from './db/labels'
 import {
   countPending,
   forgetMedia,
@@ -438,6 +438,27 @@ export function registerIpc(): void {
 
   handle(IPC.aiModels, (): Promise<string[]> => listModels(aiSettings()))
 
+  handle(IPC.aiReset, async (event): Promise<{ tags: number; collections: number; items: number } | null> => {
+    const window = BrowserWindow.fromWebContents(event.sender)
+    const question: Electron.MessageBoxOptions = {
+      type: 'warning',
+      buttons: ['Reset', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1,
+      message: 'Undo everything the classifier filed?',
+      detail:
+        'Every tag it applied goes, along with the items it sorted into collections, and any tag or collection that leaves empty. Your own tags, collections and files are untouched. Classifying again re-creates them.',
+    }
+    const answer = window
+      ? await dialog.showMessageBox(window, question)
+      : await dialog.showMessageBox(question)
+    if (answer.response !== 0) return null
+
+    const gone = resetClassification()
+    console.log('[ai] reset:', gone)
+    return gone
+  })
+
   handle(IPC.aiReclassify, (_event, all: boolean): number => {
     const queued = queueForClassification(all)
     if (queued > 0) indexer.start()
@@ -557,6 +578,7 @@ export function registerIpc(): void {
       toys.curve(Number(mediaId), Number(durationMs), Number(points)),
   )
   ipcMain.on(IPC.toyPlayback, (_event, state: ToyPlayback) => toys.playback(state))
+  ipcMain.on(IPC.toyPreview, (_event, level: number | null) => toys.preview(level))
 
   toys.on('change', () => broadcast(IPC.toyUpdate, toys.status()))
 

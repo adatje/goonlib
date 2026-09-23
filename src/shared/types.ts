@@ -368,6 +368,8 @@ export interface ToyPrefs {
   followVideo: boolean
   /** With no funscript, follow the loudness of the soundtrack instead. */
   audio: boolean
+  /** Moving an intensity slider in Settings plays it on the toy as it moves. */
+  preview: boolean
   /** Offer the toy to co-watching guests. Off until the host turns it on. */
   guests: boolean
   guestMaxIntensity: number
@@ -820,6 +822,7 @@ export const IPC = {
   aiTest: 'ai:test',
   aiModels: 'ai:models',
   aiReclassify: 'ai:reclassify',
+  aiReset: 'ai:reset',
   scrapeStart: 'scrape:start',
   scrapeCancel: 'scrape:cancel',
   scrapeStatus: 'scrape:status',
@@ -872,6 +875,7 @@ export const IPC = {
   toyResume: 'toy:resume',
   toyManual: 'toy:manual',
   toyPlayback: 'toy:playback',
+  toyPreview: 'toy:preview',
   toyPrefs: 'toy:prefs',
   toySetPrefs: 'toy:set-prefs',
   toyCurve: 'toy:curve',
@@ -1034,6 +1038,11 @@ export interface GoonLibApi {
      * queued. Resolves with the number queued.
      */
     reclassify(all: boolean): Promise<number>
+    /**
+     * Takes back everything the classifier filed, after a confirmation. Null
+     * when that was turned down; otherwise what went.
+     */
+    reset(): Promise<{ tags: number; collections: number; items: number } | null>
   }
   playback: {
     /**
@@ -1130,6 +1139,12 @@ export interface GoonLibApi {
     manual(manual: ToyManual | null): Promise<ToyStatus>
     /** The player saying what it is doing. Fire and forget. */
     playback(state: ToyPlayback): void
+    /**
+     * Plays one level on the toy while an intensity slider is being moved, and
+     * stops with null. Fire and forget, and dropped by the main process if the
+     * window stops saying so.
+     */
+    preview(level: number | null): void
     prefs(): Promise<ToyPrefs>
     setPrefs(patch: Partial<ToyPrefs>): Promise<ToyPrefs>
     /**

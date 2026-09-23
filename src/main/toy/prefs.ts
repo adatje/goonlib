@@ -18,6 +18,7 @@ export const TOY_DEFAULTS: ToyPrefs = {
   audio: true,
   guests: false,
   guestMaxIntensity: 0.7,
+  preview: false,
   guestMaxSeconds: 10,
   lovenseConnect: false,
   autoConnect: false,
@@ -35,6 +36,7 @@ export function normaliseToyPrefs(input: Partial<ToyPrefs>): ToyPrefs {
     followVideo: bool(input.followVideo, TOY_DEFAULTS.followVideo),
     audio: bool(input.audio, TOY_DEFAULTS.audio),
     guests: bool(input.guests, TOY_DEFAULTS.guests),
+    preview: bool(input.preview, TOY_DEFAULTS.preview),
     // Guests never get more than the host allows the toy at all.
     guestMaxIntensity: Math.min(
       maxIntensity,

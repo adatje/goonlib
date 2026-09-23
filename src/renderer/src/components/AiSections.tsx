@@ -56,6 +56,8 @@ export function AiSections(props: AiSectionsProps): React.JSX.Element {
   const [testing, setTesting] = useState(false)
   const [test, setTest] = useState<AiTestResult | null>(null)
   const [queued, setQueued] = useState<number | null>(null)
+  /** What the last reset took back, said once and cleared on the next run. */
+  const [reset, setReset] = useState<string | null>(null)
   const [available, setAvailable] = useState<string[] | null>(null)
   const [loadingModels, setLoadingModels] = useState(false)
 
@@ -139,6 +141,28 @@ export function AiSections(props: AiSectionsProps): React.JSX.Element {
     setLoadingModels(false)
   }, [])
 
+  // Confirmed in the main process, where the dialog belongs, so a click here
+  // can never take anything away on its own.
+  const resetAi = useCallback(async () => {
+    setQueued(null)
+    setReset(null)
+    try {
+      const gone = await window.goonlib.ai.reset()
+      if (!gone) return
+      setReset(
+        gone.items === 0
+          ? 'Nothing had been filed by the classifier.'
+          : `Took back ${gone.items} ${gone.items === 1 ? 'entry' : 'entries'}` +
+              `${gone.tags > 0 ? `, ${gone.tags} ${gone.tags === 1 ? 'tag' : 'tags'}` : ''}` +
+              `${gone.collections > 0 ? `, ${gone.collections} ${gone.collections === 1 ? 'collection' : 'collections'}` : ''}.`,
+      )
+      props.onChanged()
+    } catch (err) {
+      setError(message(err))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- props read fresh each render
+  }, [])
+
   const changeDistance = useCallback((next: number) => {
     void window.goonlib.duplicates
       .setDistance(next)
@@ -149,6 +173,7 @@ export function AiSections(props: AiSectionsProps): React.JSX.Element {
   const reclassify = useCallback(
     async (all: boolean) => {
       setQueued(null)
+      setReset(null)
       try {
         const count = await window.goonlib.ai.reclassify(all)
         setQueued(count)
@@ -424,11 +449,20 @@ export function AiSections(props: AiSectionsProps): React.JSX.Element {
                   >
                     Re-classify all
                   </button>
+                  <button
+                    type="button"
+                    className="button button--danger"
+                    onClick={() => void resetAi()}
+                    title="Take back every tag and collection the classifier filed"
+                  >
+                    Reset
+                  </button>
                   {queued !== null ? (
                     <span className="muted">
                       {queued === 0 ? 'Nothing to queue' : `${queued} queued`}
                     </span>
                   ) : null}
+                  {reset !== null ? <span className="muted">{reset}</span> : null}
                 </div>
                 <span className="settings__hint">
                   New items are classified as they are scanned. These are for everything already

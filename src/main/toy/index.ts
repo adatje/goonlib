@@ -81,6 +81,13 @@ const BATTERY_MS = 60_000
 /** Least time between two status pushes caused only by the level moving. */
 const PUSH_GAP_MS = 120
 
+/**
+ * How long a previewed level lasts without being repeated. The window says so
+ * every second while a slider is held, so anything longer means the window has
+ * gone away and the toy should stop rather than buzz on alone.
+ */
+const PREVIEW_HOLD_MS = 2_500
+
 /** Kinds of motor that take a strength. All are driven by the same level. */
 const STRENGTH_OUTPUTS = [OutputType.Vibrate, OutputType.Rotate, OutputType.Oscillate] as const
 
@@ -117,6 +124,9 @@ class Toys extends EventEmitter {
   private scriptState: ToyScriptState = { kind: 'none', mediaId: null }
   private scriptAbort: AbortController | null = null
   private manualRun: RunningManual | null = null
+  /** A level being tried from Settings, and the timer that drops it if the window goes quiet. */
+  private previewLevel: number | null = null
+  private previewWatchdog: NodeJS.Timeout | null = null
   private readonly guests = new BuzzQueue()
 
   private lastPush = 0
@@ -474,6 +484,28 @@ class Toys extends EventEmitter {
   }
 
   /** The host's player reporting in. Cheap, because it arrives often. */
+  /**
+   * Plays one level while a slider in Settings is being moved, and stops with
+   * null. Not scaled by Intensity — it is usually Intensity being set — and
+   * dropped by itself if the window stops saying so, so a lost renderer can
+   * never leave the toy running.
+   */
+  preview(level: number | null): void {
+    if (this.previewWatchdog) clearTimeout(this.previewWatchdog)
+    this.previewWatchdog = null
+
+    const wanted = typeof level === 'number' && Number.isFinite(level) ? clamp01(level) : null
+    this.previewLevel = wanted
+    if (wanted !== null) {
+      this.previewWatchdog = setTimeout(() => {
+        this.previewLevel = null
+        this.previewWatchdog = null
+        this.changed()
+      }, PREVIEW_HOLD_MS)
+    }
+    this.changed()
+  }
+
   playback(report: ToyPlayback): void {
     const now = Date.now()
     const mediaId = typeof report.mediaId === 'number' ? report.mediaId : null

@@ -104,3 +104,50 @@ export function queueForClassification(all: boolean): number {
     )
     .run().changes
 }
+
+/**
+ * Takes back everything the classifier filed: its tag assignments, the items
+ * it sorted into collections, and any tag or collection left empty by that.
+ *
+ * Only what it filed itself goes. A tag you also applied by hand keeps its own
+ * assignments and stays, and a collection you put anything in stays too. The
+ * labels can be made again by classifying, which is why this is safe to offer.
+ */
+export function resetClassification(): { tags: number; collections: number; items: number } {
+  const db = getDb()
+
+  const undo = db.transaction(() => {
+    // Noted before the rows go, so only what the classifier touched is weighed
+    // up afterwards — an empty tag of your own is none of this function's business.
+    const tagIds = db
+      .prepare<[], { tag_id: number }>("SELECT DISTINCT tag_id FROM media_tags WHERE source = 'ai'")
+      .all()
+      .map((row) => row.tag_id)
+    const collectionIds = db
+      .prepare<[], { collection_id: number }>(
+        "SELECT DISTINCT collection_id FROM collection_items WHERE source = 'ai'",
+      )
+      .all()
+      .map((row) => row.collection_id)
+
+    const tagRows = db.prepare("DELETE FROM media_tags WHERE source = 'ai'").run().changes
+    const itemRows = db.prepare("DELETE FROM collection_items WHERE source = 'ai'").run().changes
+
+    const emptyTag = db.prepare(
+      'DELETE FROM tags WHERE id = ? AND NOT EXISTS (SELECT 1 FROM media_tags WHERE tag_id = ?)',
+    )
+    const emptyCollection = db.prepare(
+      `DELETE FROM collections WHERE id = ?
+         AND NOT EXISTS (SELECT 1 FROM collection_items WHERE collection_id = ?)`,
+    )
+
+    let tags = 0
+    for (const id of tagIds) tags += emptyTag.run(id, id).changes
+    let collections = 0
+    for (const id of collectionIds) collections += emptyCollection.run(id, id).changes
+
+    return { tags, collections, items: tagRows + itemRows }
+  })
+
+  return undo()
+}

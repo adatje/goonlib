@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CustomPattern, PatternId } from '@shared/toy'
 import { customIdOf, customPatternId, TOY_PATTERNS } from '@shared/toy'
 import { PatternEditor } from './PatternEditor'
@@ -188,9 +188,17 @@ function Devices({ toy }: { toy: ToyView }): React.JSX.Element {
 function Strength({ toy, prefs }: { toy: ToyView; prefs: ToyPrefs }): React.JSX.Element {
   return (
     <div className="toy__section">
+      <Switch
+        label="Enable Preview"
+        hint="Lets you preview the toy at the configured intensity"
+        checked={prefs.preview}
+        onChange={(preview) => toy.setPrefs({ preview })}
+      />
+
       <Slider
         label="Intensity"
         hint="The maximum intensity enabled for your toy"
+        preview={prefs.preview}
         min={5}
         max={100}
         step={5}
@@ -203,6 +211,7 @@ function Strength({ toy, prefs }: { toy: ToyView; prefs: ToyPrefs }): React.JSX.
       <Slider
         label="Guest Intensity"
         hint="The maximum intensity allowed for guests"
+        preview={prefs.preview}
         min={5}
         max={100}
         ceiling={Math.round(prefs.maxIntensity * 100)}
@@ -540,18 +549,42 @@ function Slider(props: {
   max: number
   /** The highest it can be set to, when lower than the end of the bar. It stops there while dragging. */
   ceiling?: number
+  /**
+   * Play the value on the toy while the slider is held, so an intensity can be
+   * felt rather than guessed at. Percentages, which is what these sliders are.
+   */
+  preview?: boolean
   step: number
   value: number
   format: (value: number) => string
   onChange: (value: number) => void
 }): React.JSX.Element {
   const [draft, setDraft] = useState<number | null>(null)
+  const [previewing, setPreviewing] = useState(false)
   const limit = (value: number): number => Math.min(value, props.ceiling ?? props.max)
   const shown = draft ?? props.value
   const commit = (): void => {
     if (draft !== null && draft !== props.value) props.onChange(draft)
     setDraft(null)
+    stopPreview()
   }
+
+  const stopPreview = (): void => {
+    if (!previewing) return
+    setPreviewing(false)
+    window.goonlib.toy.preview(null)
+  }
+
+  // Held as long as the slider is, and said again every second: the main
+  // process drops a preview it stops hearing about, so a window that goes away
+  // mid-drag cannot leave the toy running.
+  useEffect(() => {
+    if (!previewing) return
+    const send = (): void => window.goonlib.toy.preview(shown / 100)
+    send()
+    const timer = setInterval(send, 1000)
+    return () => clearInterval(timer)
+  }, [previewing, shown])
 
   return (
     <label className="settings__field">
@@ -567,9 +600,12 @@ function Slider(props: {
         step={props.step}
         value={shown}
         onChange={(event) => setDraft(limit(Number(event.target.value)))}
+        onPointerDown={() => props.preview && setPreviewing(true)}
+        onKeyDown={() => props.preview && setPreviewing(true)}
         onPointerUp={commit}
         onKeyUp={commit}
         onBlur={commit}
+        onPointerCancel={commit}
       />
       {props.hint ? <span className="settings__hint">{props.hint}</span> : null}
     </label>
