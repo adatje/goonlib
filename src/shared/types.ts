@@ -1,3 +1,4 @@
+import type { KeyBindings } from './keys'
 import type { Theme, ThemeConfig, ThemeMode, ThemeType } from './theme'
 import type { CustomPattern, PatternId, PatternShape, VibrateFrom } from './toy'
 
@@ -927,6 +928,9 @@ export const IPC = {
   themeImport: 'theme:import',
   themeExport: 'theme:export',
   themeReveal: 'theme:reveal',
+  keysGet: 'keys:get',
+  keysReset: 'keys:reset',
+  keysSet: 'keys:set',
   settingsExport: 'settings:export',
   settingsImport: 'settings:import',
   /** Main -> renderer: a theme changed, from the app or by a hand edit. */
@@ -1182,6 +1186,14 @@ export interface GoonLibApi {
     copyInvite(): Promise<boolean>
     onUpdate(listener: (session: CoWatchSession) => void): () => void
     onReaction(listener: (reaction: CoWatchReaction) => void): () => void
+  }
+  keys: {
+    /** Every shortcut as it stands, defaults included. */
+    get(): Promise<KeyBindings>
+    /** Sets one action's keys, or clears them with an empty list. Resolves with them all. */
+    set(actionId: string, keys: string[]): Promise<KeyBindings>
+    /** Puts every shortcut back to its default. */
+    reset(): Promise<KeyBindings>
   }
   settings: {
     /** Writes settings and themes to a file. False when the dialog was cancelled. */

@@ -13,6 +13,7 @@ import { ImageViewer } from './ImageViewer'
 import { MediaInfo } from './MediaInfo'
 import { ToyChip } from './ToyChip'
 import { UpNext } from './UpNext'
+import { actionOf } from '../keys'
 import { CameraIcon, DescriptionIcon, InfoIcon, LoopIcon } from './SidebarIcons'
 import { HeartIcon, ShuffleToggle } from './Toolbar'
 import { ToyBar } from './ToyBar'
@@ -237,8 +238,8 @@ export function Lightbox(props: LightboxProps): React.JSX.Element {
 
       if (typing && event.key !== 'Escape') return
 
-      switch (event.key) {
-        case 'Escape':
+      switch (actionOf('viewer', event) ?? '') {
+        case 'viewer.close':
           // One press closes the item, fullscreen or not. It used to take two
           // from fullscreen — the first only left it — which read as Escape
           // not working at all.
@@ -247,88 +248,110 @@ export function Lightbox(props: LightboxProps): React.JSX.Element {
           onClose()
           break
 
-        case ' ':
-        case 'k':
+        case 'player.playPause':
           if (isVideo) {
             event.preventDefault()
             player?.togglePlay()
           }
           break
 
-        case 'ArrowLeft':
-          event.preventDefault()
+        case 'viewer.previous':
           // Arrows move between items, for video as much as for stills — going
           // to the next thing is what you reach for far more often than nudging
-          // the playhead. Holding shift scrubs instead, and j / l still seek.
-          if (isVideo && event.shiftKey) player?.seekBy(-5)
-          else onNavigate(-1)
-          break
-
-        case 'ArrowRight':
+          // the playhead. Shift with them scrubs instead, and j / l still seek.
           event.preventDefault()
-          if (isVideo && event.shiftKey) player?.seekBy(5)
-          else onNavigate(1)
-          break
-
-        case 'j':
-          if (isVideo) player?.seekBy(-10)
-          break
-        case 'l':
-          if (isVideo) player?.seekBy(10)
-          break
-
-        case '[':
           onNavigate(-1)
           break
-        case ']':
+
+        case 'viewer.next':
+          event.preventDefault()
           onNavigate(1)
+          break
+
+        case 'player.backShort':
+          if (isVideo) {
+            event.preventDefault()
+            player?.seekBy(-5)
+          }
+          break
+
+        case 'player.forwardShort':
+          if (isVideo) {
+            event.preventDefault()
+            player?.seekBy(5)
+          }
+          break
+
+        case 'player.back':
+          if (isVideo) player?.seekBy(-10)
+          break
+
+        case 'player.forward':
+          if (isVideo) player?.seekBy(10)
           break
 
         // Both delete keys. The typing guard above means neither can fire while
         // a tag or collection name is being typed.
-        case 'Backspace':
-        case 'Delete':
+        case 'viewer.trash':
           event.preventDefault()
           props.onTrash?.(item.id)
           break
 
-        case 'ArrowUp':
+        case 'player.volumeUp':
           if (isVideo) {
             event.preventDefault()
             player?.adjustVolume(0.1)
           }
           break
-        case 'ArrowDown':
+
+        case 'player.volumeDown':
           if (isVideo) {
             event.preventDefault()
             player?.adjustVolume(-0.1)
           }
           break
 
-        case 'm':
+        case 'player.mute':
           if (isVideo) player?.toggleMute()
           break
 
-        case ',':
+        case 'player.frameBack':
           if (isVideo) player?.stepFrame(-1)
           break
-        case '.':
+
+        case 'player.frameForward':
           if (isVideo) player?.stepFrame(1)
           break
 
-        case 'f':
+        case 'player.slower':
+          if (isVideo) player?.adjustRate(-1)
+          break
+
+        case 'player.faster':
+          if (isVideo) player?.adjustRate(1)
+          break
+
+        case 'player.fullscreen':
           if (isVideo) player?.toggleFullscreen()
           break
 
-        case 's':
+        case 'viewer.shuffle':
           props.onShuffleChange(!props.shuffle)
           break
 
-        case 'r':
+        case 'viewer.random':
           props.onRandom()
           break
 
-        case 'h':
+        case 'viewer.loop':
+          props.onPlaybackChange({ loop: !props.playback.loop })
+          break
+
+        case 'viewer.details':
+          props.onPlaybackChange({ showMetadata: !props.playback.showMetadata })
+          break
+
+        case 'viewer.favorite':
           props.onToggleFavorite?.(item)
           break
 

@@ -13,6 +13,8 @@ export interface VideoPlayerHandle {
   togglePlay(): void
   seekBy(seconds: number): void
   stepFrame(direction: 1 | -1): void
+  /** A step up or down the speeds, for playing something over or skimming it. */
+  adjustRate(direction: 1 | -1): void
   adjustVolume(delta: number): void
   toggleMute(): void
   toggleFullscreen(): void
@@ -75,6 +77,14 @@ export interface PlayerClock {
   duration: number
   /** Goes through the same path as the scrub bar, co-watching included. */
   seek: (seconds: number) => void
+}
+
+/** The speeds the keys step through. */
+const RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3]
+
+/** The listed speed nearest the one playing, so a step always lands on the list. */
+function nearestRate(rate: number): number {
+  return RATES.reduce((best, entry) => (Math.abs(entry - rate) < Math.abs(best - rate) ? entry : best), 1)
 }
 
 /** How often a playing video re-states its position, so followers cannot drift. */
@@ -493,6 +503,13 @@ export function VideoPlayer({
     video.muted = !video.muted
   }, [])
 
+  const adjustRate = useCallback((direction: 1 | -1) => {
+    const video = videoRef.current
+    if (!video) return
+    const at = RATES.indexOf(nearestRate(video.playbackRate))
+    video.playbackRate = RATES[Math.min(RATES.length - 1, Math.max(0, at + direction))] ?? 1
+  }, [])
+
   const toggleFullscreen = useCallback(() => {
     const shell = shellRef.current
     if (!shell) return
@@ -502,8 +519,8 @@ export function VideoPlayer({
 
   useImperativeHandle(
     handleRef,
-    () => ({ togglePlay, seekBy, stepFrame, adjustVolume, toggleMute, toggleFullscreen }),
-    [togglePlay, seekBy, stepFrame, adjustVolume, toggleMute, toggleFullscreen],
+    () => ({ togglePlay, seekBy, stepFrame, adjustRate, adjustVolume, toggleMute, toggleFullscreen }),
+    [togglePlay, seekBy, stepFrame, adjustRate, adjustVolume, toggleMute, toggleFullscreen],
   )
 
   if (status.kind === 'error') {

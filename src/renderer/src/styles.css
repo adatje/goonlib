@@ -4361,3 +4361,68 @@ button.styling__reset:hover {
   padding: 5px 8px;
   font-size: 12px;
 }
+
+/* The shortcuts card, and the same list on its Settings page. */
+.shortcuts {
+  width: 560px;
+  max-height: 80vh;
+}
+
+.shortcuts__body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.shortcuts__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.shortcuts__row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.shortcuts__row dt {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+}
+
+.shortcuts__row dd {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+}
+
+.shortcuts__key {
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-sunken);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.shortcuts__setting {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shortcuts__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.shortcuts__setting .button {
+  min-width: 110px;
+  text-align: center;
+}

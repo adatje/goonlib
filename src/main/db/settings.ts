@@ -7,6 +7,8 @@
  */
 
 import { safeStorage } from 'electron'
+import { defaultBindings, KEY_ACTIONS, mergeBindings, normalizeBinding } from '@shared/keys'
+import type { KeyBindings } from '@shared/keys'
 import { IMAGE_SECONDS, RESUME_AFTER } from '@shared/types'
 import type { AiSettings, AiSettingsView, PlaybackPrefs, ToyPrefs } from '@shared/types'
 import { AI_DEFAULTS, normaliseAiSettings } from '../ai/settings-shape'
@@ -40,6 +42,39 @@ export const SETTING_SHOW_CONTINUE = 'playback.showContinue'
 export const SETTING_RESUME_SESSIONS = 'playback.resumeInSessions'
 export const SETTING_DUPLICATE_DISTANCE = 'duplicates.distance'
 export const SETTING_TOY = 'toy.prefs'
+export const SETTING_KEYS = 'keys.bindings'
+
+/** Every shortcut: the defaults, with whatever has been changed laid over them. */
+export function keyBindings(): KeyBindings {
+  const stored = getSetting(SETTING_KEYS)
+  if (!stored) return defaultBindings()
+  try {
+    return mergeBindings(JSON.parse(stored))
+  } catch {
+    return defaultBindings()
+  }
+}
+
+/** Sets one action's keys. An empty list leaves that action without any. */
+export function setKeyBinding(actionId: string, keys: unknown): KeyBindings {
+  const known = KEY_ACTIONS.some((action) => action.id === actionId)
+  if (!known) return keyBindings()
+
+  const clean = (Array.isArray(keys) ? keys : [])
+    .filter((key): key is string => typeof key === 'string' && key.trim() !== '')
+    .map(normalizeBinding)
+    .slice(0, 4)
+
+  const next = { ...keyBindings(), [actionId]: clean }
+  setSetting(SETTING_KEYS, JSON.stringify(next))
+  return next
+}
+
+/** Puts every shortcut back to how it shipped. */
+export function resetKeyBindings(): KeyBindings {
+  setSetting(SETTING_KEYS, JSON.stringify(defaultBindings()))
+  return defaultBindings()
+}
 export const SETTING_COWATCH_NAME = 'cowatch.hostName'
 
 /** What the host is called in a session. */

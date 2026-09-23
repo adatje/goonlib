@@ -2,6 +2,7 @@
 export type SheetTab =
   | 'app'
   | 'backup'
+  | 'shortcuts'
   | 'styling'
   | 'controls'
   | 'solo'

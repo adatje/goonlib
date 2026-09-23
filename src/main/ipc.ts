@@ -1,6 +1,7 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, shell, webContents } from 'electron'
 import { readdir } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
+import type { KeyBindings } from '@shared/keys'
 import { IPC } from '@shared/types'
 import type { Theme, ThemeMode, ThemeType } from '@shared/theme'
 import type {
@@ -73,6 +74,9 @@ import {
   clearApiKey,
   duplicateDistance,
   playbackPrefs,
+  keyBindings,
+  setKeyBinding,
+  resetKeyBindings,
   hostName,
   setHostName,
   setAiSettings,
@@ -595,6 +599,12 @@ export function registerIpc(): void {
     themes.export(BrowserWindow.fromWebContents(event.sender), theme),
   )
   handle(IPC.themeReveal, (): void => themes.revealFolder())
+
+  handle(IPC.keysGet, (): KeyBindings => keyBindings())
+  handle(IPC.keysSet, (_event, actionId: string, keys: string[]): KeyBindings =>
+    setKeyBinding(String(actionId), keys),
+  )
+  handle(IPC.keysReset, (): KeyBindings => resetKeyBindings())
 
   handle(IPC.settingsExport, (event): Promise<boolean> =>
     exportSettings(BrowserWindow.fromWebContents(event.sender)),

@@ -8,6 +8,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron'
+import type { KeyBindings } from '@shared/keys'
 import type { Theme, ThemeMode, ThemeType } from '@shared/theme'
 import type { CustomPattern } from '@shared/toy'
 import { IPC } from '@shared/types'
@@ -220,6 +221,12 @@ const api: GoonLibApi = {
       ipcRenderer.on(IPC.cowatchReaction, wrapped)
       return () => ipcRenderer.removeListener(IPC.cowatchReaction, wrapped)
     },
+  },
+  keys: {
+    get: (): Promise<KeyBindings> => ipcRenderer.invoke(IPC.keysGet),
+    set: (actionId: string, keys: string[]): Promise<KeyBindings> =>
+      ipcRenderer.invoke(IPC.keysSet, actionId, keys),
+    reset: (): Promise<KeyBindings> => ipcRenderer.invoke(IPC.keysReset),
   },
   settings: {
     export: (): Promise<boolean> => ipcRenderer.invoke(IPC.settingsExport),

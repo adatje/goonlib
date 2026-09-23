@@ -19,7 +19,9 @@ import { CoWatchBar } from './components/CoWatchBar'
 import { Duplicates } from './components/Duplicates'
 import { Lightbox } from './components/Lightbox'
 import { MediaGrid } from './components/MediaGrid'
+import { actionOf } from './keys'
 import { ContinueRow } from './components/ContinueRow'
+import { ShortcutsCard } from './components/ShortcutsCard'
 import { NO_FILTERS } from './components/Filters'
 import type { FilterSet } from './components/Filters'
 import { MediaMenu } from './components/MediaMenu'
@@ -462,25 +464,55 @@ export default function App(): React.JSX.Element {
           target.isContentEditable)
       if (typing) return
 
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'a') {
-        event.preventDefault()
-        selection.selectAll()
-        return
-      }
-
       if (event.key === 'Escape' && selection.size > 0) {
         event.preventDefault()
         selection.clear()
         return
       }
 
-      // Both delete keys: forward-delete, and the backspace-position one that
-      // also reports itself as "delete" on Apple keyboards.
-      if ((event.key === 'Backspace' || event.key === 'Delete') && selection.size > 0) {
-        event.preventDefault()
-        // No dialog on the keystroke: pressing delete is already the decision,
-        // and the system Trash is the undo. The bar's button still asks.
-        void trashSelected(false)
+      switch (actionOf('library', event) ?? '') {
+        case 'library.selectAll':
+          event.preventDefault()
+          selection.selectAll()
+          break
+
+        // Both delete keys: forward-delete, and the backspace-position one that
+        // also reports itself as "delete" on Apple keyboards.
+        case 'library.trash':
+          if (selection.size === 0) break
+          event.preventDefault()
+          // No dialog on the keystroke: pressing delete is already the decision,
+          // and the system Trash is the undo. The bar's button still asks.
+          void trashSelected(false)
+          break
+
+        case 'library.search':
+          event.preventDefault()
+          document.querySelector<HTMLInputElement>('.toolbar__search')?.focus()
+          break
+
+        case 'library.filters':
+          event.preventDefault()
+          document.querySelector<HTMLButtonElement>('.toolbar__sort')?.click()
+          break
+
+        case 'library.kindAll':
+          setKind('all')
+          break
+        case 'library.kindImages':
+          setKind('image')
+          break
+        case 'library.kindVideos':
+          setKind('video')
+          break
+
+        case 'app.shortcuts':
+          event.preventDefault()
+          setShowKeys(true)
+          break
+
+        default:
+          break
       }
     }
 
@@ -964,6 +996,9 @@ export default function App(): React.JSX.Element {
     [guard, refreshSidebar, tagId, view],
   )
 
+  /** The shortcuts card, opened with its own key and closed with Escape. */
+  const [showKeys, setShowKeys] = useState(false)
+
   /** Bumped to re-read Continue watching: after the viewer closes, and after a clear. */
   const [continueKey, setContinueKey] = useState(0)
 
@@ -1248,6 +1283,8 @@ export default function App(): React.JSX.Element {
         />
       ) : null}
 
+      {showKeys ? <ShortcutsCard onClose={() => setShowKeys(false)} /> : null}
+
       {menuAt ? (
         <MediaMenu
           at={menuAt}
@@ -1296,6 +1333,7 @@ const SHEET_TAB_KEY = 'goonlib.settingsTab'
 const SHEET_TABS: readonly SheetTab[] = [
   'app',
   'backup',
+  'shortcuts',
   'styling',
   'controls',
   'solo',
