@@ -219,6 +219,10 @@ const api: GoonLibApi = {
       return () => ipcRenderer.removeListener(IPC.cowatchReaction, wrapped)
     },
   },
+  settings: {
+    export: (): Promise<boolean> => ipcRenderer.invoke(IPC.settingsExport),
+    import: (): Promise<boolean> => ipcRenderer.invoke(IPC.settingsImport),
+  },
   theme: {
     // Asked for synchronously, once, so the first paint is already in the
     // right colours. Everything after that arrives through onUpdate.

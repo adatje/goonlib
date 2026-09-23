@@ -95,6 +95,7 @@ import { preparer } from './media/prepare'
 import { indexer } from './scan/indexer'
 import { scraper } from './scrape/scraper'
 import { toys } from './toy'
+import { exportSettings, importSettings } from './backup'
 import { readExif } from './media/exif'
 import {
   clearHistory,
@@ -592,6 +593,13 @@ export function registerIpc(): void {
     themes.export(BrowserWindow.fromWebContents(event.sender), theme),
   )
   handle(IPC.themeReveal, (): void => themes.revealFolder())
+
+  handle(IPC.settingsExport, (event): Promise<boolean> =>
+    exportSettings(BrowserWindow.fromWebContents(event.sender)),
+  )
+  handle(IPC.settingsImport, (event): Promise<boolean> =>
+    importSettings(BrowserWindow.fromWebContents(event.sender)),
+  )
   themes.on('change', (state: ThemeState) => broadcast(IPC.themeUpdate, state))
 
   // --- toys ------------------------------------------------------------------

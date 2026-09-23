@@ -780,6 +780,20 @@ export interface ThemeState {
   problems: string[]
 }
 
+/** A settings backup, as written to a file. Themes come along; filing does not. */
+export interface SettingsBackup {
+  kind: 'goonlib-settings'
+  format: number
+  /** The app version that wrote it, for reading a problem report later. */
+  version: string
+  exportedAt: number
+  /** Every stored setting, less the AI key, which is never written out. */
+  settings: Record<string, string>
+  themes: ThemeConfig
+  /** The saved themes, without the built-in ones. */
+  library: Theme[]
+}
+
 export interface ThemeImport {
   state: ThemeState
   /** Null when the dialog was cancelled. */
@@ -883,6 +897,8 @@ export const IPC = {
   themeImport: 'theme:import',
   themeExport: 'theme:export',
   themeReveal: 'theme:reveal',
+  settingsExport: 'settings:export',
+  settingsImport: 'settings:import',
   /** Main -> renderer: a theme changed, from the app or by a hand edit. */
   themeUpdate: 'theme:update',
   toyStatus: 'toy:status',
@@ -1134,6 +1150,15 @@ export interface GoonLibApi {
     copyInvite(): Promise<boolean>
     onUpdate(listener: (session: CoWatchSession) => void): () => void
     onReaction(listener: (reaction: CoWatchReaction) => void): () => void
+  }
+  settings: {
+    /** Writes settings and themes to a file. False when the dialog was cancelled. */
+    export(): Promise<boolean>
+    /**
+     * Reads settings and themes back, after asking. False when the dialog or
+     * the question was turned down.
+     */
+    import(): Promise<boolean>
   }
   theme: {
     /** The themes as they stood when the window opened, for its first paint. */

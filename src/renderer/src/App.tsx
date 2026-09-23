@@ -1284,6 +1284,7 @@ const SHEET_TAB_KEY = 'goonlib.settingsTab'
 
 const SHEET_TABS: readonly SheetTab[] = [
   'app',
+  'backup',
   'styling',
   'controls',
   'solo',

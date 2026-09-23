@@ -114,6 +114,31 @@ class Themes extends EventEmitter {
     return this.state()
   }
 
+/**
+   * Puts back themes from a settings backup: the saved ones are written into
+   * the folder, and the modes and sides are taken as they were. Themes already
+   * here under other names are left alone — a restore adds, it does not sweep.
+   */
+  async restore(config: unknown, library: unknown[]): Promise<ThemeState> {
+    for (const entry of library) {
+      const clean = sanitizeTheme(entry)
+      if (!clean) continue
+      if (BUILT_IN_THEMES.some((t) => t.name.toLowerCase() === clean.theme.name.toLowerCase())) continue
+      await writeAtomic(join(libraryDir(), `${slug(clean.theme.name)}.json`), serializeTheme(clean.theme))
+    }
+
+    const raw = config && typeof config === 'object' ? (config as Record<string, unknown>) : {}
+    const side = (key: ThemeType): Theme => sanitizeTheme(raw[key])?.theme ?? this.config[key]
+    const mode: ThemeMode = raw.mode === 'light' || raw.mode === 'system' ? raw.mode : 'dark'
+
+    this.config = { mode, dark: side('dark'), light: side('light') }
+    this.applyNative()
+    await writeAtomic(configPath(), this.serializeConfig())
+    await this.reload()
+    this.emit('change', this.state())
+    return this.state()
+  }
+
   /** Moves a saved theme to the system Trash. Built-ins have no file to remove. */
   async remove(id: string): Promise<ThemeState> {
     const entry = this.library.find((e) => e.id === id && !e.builtIn)

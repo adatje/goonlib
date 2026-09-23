@@ -5,6 +5,7 @@ import type { ToyView } from '../state/useToy'
 import { AiSections } from './AiSections'
 import { AppSettings } from './AppSettings'
 import { AppStyling } from './AppStyling'
+import { BackupSettings } from './BackupSettings'
 import { PeopleIcon, PulseIcon, SlidersIcon, SparkleIcon } from './SidebarIcons'
 import { TabPanel, type SheetTab } from './TabPanel'
 import { ToySections } from './ToySections'
@@ -46,6 +47,7 @@ const GROUPS: Array<{ label: string; icon: React.ReactNode; entries: RailEntry[]
       { label: 'App', tab: 'app', tabs: ['app'] },
       { label: 'Appearance', tab: 'styling', tabs: ['styling'] },
       { label: 'De-duplication', tab: 'duplicates', tabs: ['duplicates'] },
+      { label: 'Backup', tab: 'backup', tabs: ['backup'] },
     ],
   },
   {
@@ -84,6 +86,10 @@ const PAGE_HEADS: Record<SheetTab, { title: string; intro: string }> = {
   styling: {
     title: 'Appearance',
     intro: 'Light, dark or automatic, and themes of your own to pick from.',
+  },
+  backup: {
+    title: 'Backup',
+    intro: 'Your settings and themes, out to a file and back in.',
   },
   duplicates: {
     title: 'De-duplication',
@@ -238,6 +244,9 @@ export function SettingsSheet(props: SettingsSheetProps): React.JSX.Element {
                 onPlaybackChange={props.onPlaybackChange}
                 onChanged={props.onChanged}
               />
+            </TabPanel>
+            <TabPanel id="backup" tab={tab}>
+              <BackupSettings />
             </TabPanel>
             <TabPanel id="styling" tab={tab}>
               <AppStyling active={tab === 'styling'} />

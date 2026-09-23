@@ -1,6 +1,7 @@
 /** Every tab in the Settings sheet, in the order the rail lists them. */
 export type SheetTab =
   | 'app'
+  | 'backup'
   | 'styling'
   | 'controls'
   | 'solo'
