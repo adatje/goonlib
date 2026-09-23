@@ -73,7 +73,7 @@ export function ToyChip({ toy }: { toy: ToyView }): React.JSX.Element {
 
       {/* The menu hangs from the chip's left edge, like the sort menu beside it. */}
       {open ? (
-        <div className="addto__menu addto__menu--narrow addto__menu--left" role="menu" aria-label="Pattern">
+        <div className="addto__menu addto__menu--narrow" role="menu" aria-label="Pattern">
           {TOY_PATTERNS.map((pattern) => (
             <PatternRow
               key={pattern.id}

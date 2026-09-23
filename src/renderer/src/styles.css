@@ -342,7 +342,9 @@ body {
 
 .addto__menu {
   position: absolute;
-  right: 0;
+  /* Every menu hangs from the left edge of what opened it, and overflows to
+     the right, so no two of them line up differently. */
+  left: 0;
   top: calc(100% + 6px);
   z-index: 10;
   width: 230px;
@@ -702,12 +704,6 @@ body {
 .toolbar__sort-chevron {
   font-size: 10px;
   color: var(--text-muted);
-}
-
-/* A menu opening from a control on the left, so it hangs to the right. */
-.addto__menu--left {
-  right: auto;
-  left: 0;
 }
 
 .toolbar__count {

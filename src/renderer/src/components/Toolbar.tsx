@@ -195,7 +195,7 @@ function SortMenu(props: {
       </button>
 
       {open ? (
-        <div className="addto__menu addto__menu--narrow addto__menu--left" role="menu" aria-label="Sort by">
+        <div className="addto__menu addto__menu--narrow" role="menu" aria-label="Sort by">
           {props.options.map((option) => (
             <button
               key={option.value}
