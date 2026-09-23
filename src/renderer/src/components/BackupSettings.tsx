@@ -45,10 +45,7 @@ export function BackupSettings(): React.JSX.Element {
 
       {note ? <span className={note.ok ? 'settings__ok' : 'settings__bad'}>{note.text}</span> : null}
 
-      <span className="settings__hint">
-        Preferences, toy settings and your themes, in one file. Your library and its tags,
-        collections and favourites are not part of it, and neither is your AI key.
-      </span>
+      <span className="settings__hint">Preferences, toy settings and your themes, in one file.</span>
     </div>
   )
 }
