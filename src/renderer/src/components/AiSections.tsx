@@ -435,9 +435,7 @@ export function AiSections(props: AiSectionsProps): React.JSX.Element {
                   in the library - after changing the categories, say, Re-classify all labels it
                   again against the new list.
                 </span>
-              </div>
 
-              <div className="settings__group">
                 {settings.autoSort ? (
                   <Field
                     label={`Confidence threshold - ${Math.round(settings.minConfidence * 100)}%`}
@@ -456,7 +454,9 @@ export function AiSections(props: AiSectionsProps): React.JSX.Element {
                     />
                   </Field>
                 ) : null}
+              </div>
 
+              <div className="settings__group">
                 <label className="switch switch--compact">
                   <input
                     type="checkbox"
