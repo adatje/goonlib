@@ -1,0 +1,53 @@
+appId: me.adatje.goonlib
+productName: GoonLib
+copyright: Copyright © 2026 @Adatje
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - out/**
+  - package.json
+
+# Native binaries and modules cannot be executed from inside the asar archive.
+asarUnpack:
+  - node_modules/ffmpeg-static/**
+  - node_modules/@ffprobe-installer/**
+  - node_modules/sharp/**
+  - node_modules/@img/**
+  - node_modules/better-sqlite3/**
+
+mac:
+  icon: build/icon.icns
+  category: public.app-category.photography
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  # The app reads media the user explicitly points it at, and requests no camera,
+  # microphone, or network permissions. Bluetooth is the one exception: the
+  # Intiface engine it launches to reach a toy is unsigned and cannot ask for
+  # itself, so macOS asks on GoonLib's behalf — and kills the engine outright if
+  # the app has no reason on file to show.
+  extendInfo:
+    NSBluetoothAlwaysUsageDescription: GoonLib connects to your toy over Bluetooth, only when you ask it to.
+  darkModeSupport: true
+
+dmg:
+  title: GoonLib ${version}
+
+win:
+  icon: build/icon.png
+  target:
+    - nsis
+
+linux:
+  icon: build/icon.png
+  category: Graphics
+  target:
+    - AppImage
+
+# better-sqlite3 is a V8-ABI module and must be rebuilt against Electron's headers.
+npmRebuild: true

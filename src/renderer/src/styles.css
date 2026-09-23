@@ -1,0 +1,4151 @@
+/*
+ * Theme tokens. These are Midnight, the built-in dark theme, and what the app
+ * looks like with no theme set. A theme overrides them from theme.ts, which
+ * also works out every token a theme leaves out; the var() chains here only
+ * describe the same fallbacks for anyone reading the stylesheet.
+ */
+:root {
+  /* Base */
+  --bg: #0b0b0f;
+  --text: #e7e7ee;
+  --accent: #7c6cff;
+
+  --text-muted: #8b8b9c;
+  --accent-fg: #ffffff;
+
+  /* Surfaces: panel.background and panel.border */
+  --bg-raised: #14141a;
+  --border: #26262f;
+
+  --sidebar-bg: var(--bg-raised);
+  --sidebar-fg: var(--text);
+  --sidebar-active: var(--list-active);
+  --toolbar-bg: var(--bg);
+
+  /* list.hoverBackground and list.activeBackground: rows, menu items and tabs,
+     tinted with the favourite pink. */
+  --list-hover: #ff5c8a17;
+  --list-active: #ff5c8a2e;
+  /* The neutral raised surface buttons, tracks and meters sit on. */
+  --bg-hover: #1d1d26;
+
+  /* input.background, which also serves every other sunken well */
+  --bg-sunken: #08080b;
+  --input-border: var(--border);
+  --input-fg: var(--text);
+
+  --button-bg: var(--bg-hover);
+  --button-fg: var(--text);
+  --button-hover: #26262f;
+
+  --card-bg: var(--bg-raised);
+  --viewer-bg: rgba(6, 6, 9, 0.97);
+  --controls-bg: var(--bg-raised);
+
+  --danger: #ff6b6b;
+  --success: #62d29a;
+  --heart: #ff5c8a;
+  /* icon.foreground */
+  --icon: var(--heart);
+
+  /* Not theme keys: tints theme.ts derives from the ones above. */
+  --danger-text: #ffb4b4;
+  --accent-text: #c3b9ff;
+  --warn: #f0b23c;
+  --warn-text: #f0c069;
+  --warn-text-soft: #ffcf8b;
+  --live: var(--live);
+  --bar-base: #0e0e14;
+  --list-active-hover: #ff5c8a38;
+
+  --radius: 10px;
+
+  color-scheme: dark;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  height: 100%;
+  /* Keeps the last row of the grid clear of the co-watch bar. */
+  padding-bottom: var(--cowatch-bar-h, 0px);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Sidebar ------------------------------------------------------------------ */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  /* No top padding: the brand carries it instead, so it can sit flush against the
+     top of the scrollport and pin there. */
+  /* No bottom padding either: the footer pins itself there. */
+  padding: 0 14px;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-fg);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  /* Clear the macOS traffic lights under titleBarStyle: hiddenInset — and stay
+     cleared. The lights are drawn over this corner whatever the sidebar is doing,
+     so a brand that scrolled away would hand the corner to whichever tag or
+     collection happened to be passing under it. Pinned at the top of the
+     scrollport, with the sidebar's own background, the clearance is permanent. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  /* Full-bleed, so nothing shows through the sidebar's side padding either. */
+  margin: 0 -14px;
+  padding: 38px 20px 12px;
+  background: var(--sidebar-bg);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  -webkit-app-region: drag;
+}
+
+.sidebar__mark {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* The sidebar scrolls; it never squashes. Without this a section can be shrunk
+     below its own content, and since nothing here clips, the content carries on
+     painting over whatever section comes next. */
+  flex-shrink: 0;
+}
+
+.sidebar__heading {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--text-muted);
+}
+
+.sidebar__divider {
+  flex-shrink: 0;
+  /* Well short of the sidebar's width, centred. */
+  align-self: center;
+  width: 60%;
+  height: 1px;
+  /* The sidebar's 24px gap either side is more than a rule needs. */
+  margin: -8px 0;
+  border: 0;
+  background: color-mix(in srgb, var(--icon) 35%, transparent);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  /* Written like the section headings below, so Favorites and Library read as
+     two more entries rather than as always highlighted. */
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-item:hover:not(:disabled) {
+  background: var(--list-hover);
+  color: var(--text);
+}
+
+.nav-item:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.nav-item--active {
+  background: var(--sidebar-active);
+  color: var(--text);
+}
+
+.nav-item__count {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* Collections -------------------------------------------------------------- */
+
+.collection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.collection {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+}
+
+.collection:hover {
+  background: var(--list-hover);
+}
+
+.collection__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  /* The same depth as a top-level folder or source, in every section. */
+  padding: 5px 8px 5px 37px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.collection__name--on {
+  font-weight: 600;
+}
+
+.collection__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection__count {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.collection .root__remove {
+  margin-right: 4px;
+}
+
+.collection:hover .root__remove {
+  opacity: 1;
+}
+
+.collection__input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg-sunken);
+  color: var(--input-fg);
+  font: inherit;
+}
+
+.button--quiet {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 5px 8px;
+}
+
+.button--quiet:hover:not(:disabled) {
+  color: var(--text);
+}
+
+/* Add-to-collection menu --------------------------------------------------- */
+
+.addto {
+  position: relative;
+}
+
+.addto__trigger {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.addto__trigger:hover {
+  border-color: var(--accent);
+}
+
+/* Same shape as the menu triggers beside it, but it holds an on/off state —
+   matching the filled treatment the shuffle toggle already uses. */
+.addto__trigger--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+
+.addto__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 10;
+  width: 230px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg-raised);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.addto__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.addto__item:hover {
+  background: var(--list-hover);
+}
+
+.addto__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addto__count {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.addto__empty {
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.addto__new {
+  margin-top: 4px;
+  padding-top: 5px;
+  border-top: 1px solid var(--border);
+}
+
+.addto__input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-sunken);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.lightbox__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Folder tree -------------------------------------------------------------- */
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.tree__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tree__row:hover {
+  background: var(--list-hover);
+}
+
+.tree__row--on {
+  background: var(--sidebar-active);
+  font-weight: 600;
+}
+
+.tree__row[data-disabled='true'] {
+  opacity: 0.45;
+}
+
+.tree__twist {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  /* The same pink as the Folders icon above them. */
+  color: var(--icon);
+}
+
+.tree__chevron {
+  transition: transform 0.12s ease;
+}
+
+.tree__chevron--open {
+  transform: rotate(90deg);
+}
+
+.tree__twist--able:hover {
+  color: color-mix(in srgb, var(--icon) 70%, var(--text));
+}
+
+.tree__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree__count {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tree__loading {
+  padding: 3px 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.tree__error {
+  padding: 3px 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--danger-text);
+}
+
+/* Breadcrumb --------------------------------------------------------------- */
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.crumbs__group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.crumbs__item {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.crumbs__item:hover {
+  background: var(--list-hover);
+  color: var(--text);
+}
+
+.crumbs__item--on {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.crumbs__sep {
+  color: var(--border);
+}
+
+/* Roots -------------------------------------------------------------------- */
+
+.root-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.root {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* Its checkbox takes the place a folder's arrow has, so the name lands at
+     the same depth as every other section's items. */
+  padding: 5px 8px 5px 9px;
+  border-radius: 7px;
+}
+
+.root:hover {
+  background: var(--list-hover);
+}
+
+.root__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.root__toggle input {
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.root__path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.root__remove {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.root:hover .root__remove,
+.root__remove:focus-visible {
+  opacity: 1;
+}
+
+.root__remove:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* Content shell ------------------------------------------------------------ */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Toolbar ------------------------------------------------------------------ */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  position: relative;
+  padding: 34px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--toolbar-bg);
+}
+
+/*
+ * The window is dragged by a strip across the top of the toolbar, not by the
+ * toolbar itself. With the whole toolbar marked draggable and its controls
+ * opting out, left clicks still reached them but a right-click was taken by
+ * the window on macOS — which is how right-clicking Random did nothing at
+ * all. Nothing in the row of controls is inside a drag region now.
+ */
+.toolbar__drag {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 28px;
+  -webkit-app-region: drag;
+}
+
+.toolbar__search {
+  flex: 1;
+  min-width: 120px;
+  max-width: 340px;
+  padding: 7px 11px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+  color: var(--input-fg);
+  font: inherit;
+}
+
+.toolbar__search::placeholder {
+  color: var(--text-muted);
+}
+
+.toolbar__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--bg-raised);
+  color: var(--input-fg);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.toolbar__sort:hover,
+.toolbar__sort[aria-expanded='true'] {
+  border-color: var(--accent);
+}
+
+.toolbar__sort-chevron {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* A menu opening from a control on the left, so it hangs to the right. */
+.addto__menu--left {
+  right: auto;
+  left: 0;
+}
+
+.toolbar__count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.icon-button--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+
+.segmented {
+  display: flex;
+  padding: 2px;
+  /* The same shell as the sort control beside it, so the toolbar's controls
+     read as one set rather than one sunken and one raised. */
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--bg-raised);
+}
+
+.segmented__item {
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.segmented__item--on {
+  background: var(--list-active);
+  color: var(--text);
+}
+
+/* Scan bar ----------------------------------------------------------------- */
+
+.scanbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+  font-size: 13px;
+}
+
+.scanbar--error {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+.scanbar__spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanbar__spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.scanbar__label {
+  font-weight: 600;
+}
+
+.scanbar__detail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.scanbar__cancel {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.scanbar__cancel:hover {
+  border-color: var(--accent);
+}
+
+/* Grid --------------------------------------------------------------------- */
+
+.grid {
+  flex: 1;
+  min-height: 0;
+}
+
+.grid__list {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 10px;
+}
+
+.grid__item {
+  width: 200px;
+  padding: 6px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.card__frame {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: var(--card-bg);
+  overflow: hidden;
+}
+
+.card__thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card__pending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--bg-raised),
+    var(--bg-raised) 8px,
+    var(--bg-hover) 8px,
+    var(--bg-hover) 16px
+  );
+}
+
+/* Hover scrub ------------------------------------------------------------- */
+
+.scrub {
+  position: absolute;
+  inset: 0;
+  /* Sits above the still thumbnail but below the duration badge. */
+  z-index: 1;
+}
+
+.scrub__frame {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  /* No transition: the frame must track the cursor exactly, and easing between
+     two unrelated frames reads as a glitch rather than motion. */
+}
+
+.scrub__track {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.scrub__progress {
+  height: 100%;
+  background: var(--accent);
+}
+
+.card__badge {
+  position: absolute;
+  z-index: 2;
+  right: 6px;
+  bottom: 6px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.card__badge--warn {
+  left: 6px;
+  right: auto;
+  background: color-mix(in srgb, var(--danger) 85%, transparent);
+}
+
+.card__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.card--skeleton {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.card {
+  cursor: pointer;
+}
+
+.card__frame {
+  transition: outline-color 0.12s ease;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.card:hover .card__frame {
+  outline-color: var(--border);
+}
+
+.card:focus-visible {
+  outline: none;
+}
+
+.card:focus-visible .card__frame {
+  outline-color: var(--accent);
+}
+
+/* Lightbox ----------------------------------------------------------------- */
+
+/* Set by CoWatchBar while a session is running; zero the rest of the time. */
+:root {
+  --cowatch-bar-h: 0px;
+}
+
+.lightbox {
+  position: fixed;
+  /* Not `inset: 0` — the co-watch bar lives below and must stay reachable while
+     something is playing, which is exactly when you want to talk. */
+  inset: 0 0 var(--cowatch-bar-h, 0px) 0;
+  z-index: 50;
+  display: grid;
+  /* minmax(0, …) rather than a bare 1fr, whose minimum is the content's size:
+     a large item would otherwise stretch the row past the window. */
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: 64px minmax(0, 1fr) 64px;
+  grid-template-areas:
+    'bar  bar   bar'
+    'prev stage next';
+  background: var(--viewer-bg);
+  backdrop-filter: blur(8px);
+  /* Draggable regions are a window-level hit test, not a paint-order one: the
+     toolbar underneath declares `drag`, and covering it with a higher z-index
+     overlay does not give the overlay its clicks back. Without this, buttons in
+     the bar below are dead wherever they happen to line up with bare toolbar
+     background — and alive where a no-drag toolbar child sits under them, which
+     is what made it look intermittent. */
+  -webkit-app-region: no-drag;
+}
+
+.lightbox:focus {
+  outline: none;
+}
+
+.lightbox__bar {
+  grid-area: bar;
+  /* Filename on the left, controls in the middle, position and close on the
+     right: the middle column stays centred however long either side is. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  /* The overlay covers the whole window, including the strip where the macOS
+     traffic lights float under titleBarStyle: hiddenInset. Without this top
+     inset the title sits underneath them and the close button lands inside the
+     window's drag region, where clicks never reach the page at all. */
+  padding: 34px 14px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.lightbox__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  /* The filename is the one thing here that can afford to be cut short, so it
+     absorbs the squeeze. `text-overflow` alone cannot do it: a flex item will
+     not shrink below its content width without this, and the overflow lands on
+     the close button at the far end instead — off the window entirely. */
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.lightbox__meta,
+.lightbox__position {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lightbox__position {
+  margin-left: auto;
+}
+
+.lightbox__close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightbox__close:hover {
+  background: var(--bg-hover);
+}
+
+.lightbox__stage {
+  grid-area: stage;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.lightbox__nav {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 34px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightbox__nav:hover {
+  color: var(--text);
+}
+
+.lightbox__nav--prev {
+  grid-area: prev;
+}
+
+.lightbox__nav--next {
+  grid-area: next;
+}
+
+/* Player ------------------------------------------------------------------- */
+
+.player {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.player__frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: #000;
+}
+
+.player__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.player--message {
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.player__headline {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.player__detail {
+  margin: 0;
+  max-width: 480px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.player__progress {
+  width: 260px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+
+.player__progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+/* Fullscreen puts the shell itself in front, so it has to carry a background. */
+.player:fullscreen {
+  background: #000;
+}
+
+.controls {
+  /* Painted above the video whatever the compositor does with it. */
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 10px 12px;
+  background: var(--controls-bg);
+  border-top: 1px solid var(--border);
+}
+
+.player:fullscreen .controls {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(10, 10, 14, 0.85);
+  border-top: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.player:fullscreen:hover .controls,
+.player:fullscreen .controls:focus-within {
+  opacity: 1;
+}
+
+.controls__button {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.controls__button:hover {
+  background: var(--bg-hover);
+}
+
+.controls__time {
+  flex-shrink: 0;
+  min-width: 44px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.controls__scrub {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 20px;
+}
+
+.controls__buffered {
+  position: absolute;
+  left: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-hover);
+  pointer-events: none;
+}
+
+.controls__range,
+.controls__volume {
+  width: 100%;
+  accent-color: var(--accent);
+  background: transparent;
+}
+
+.controls__volume {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+/* Image viewer ------------------------------------------------------------- */
+
+.viewer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.viewer[data-zoomed='true'] {
+  cursor: grab;
+}
+
+.viewer[data-dragging='true'] {
+  cursor: grabbing;
+}
+
+.viewer__image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.viewer[data-dragging='false'] .viewer__image {
+  transition: transform 0.12s ease-out;
+}
+
+.viewer__zoom {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Icon buttons and the name prompt ----------------------------------------- */
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.icon-button--on {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 6, 9, 0.6);
+  backdrop-filter: blur(3px);
+  /* Same reason as .lightbox: this covers the toolbar and the brand row, both of
+     which are window drag handles, and covering a drag region does not reclaim
+     its clicks. Settings is tall enough to reach the strip at the top. */
+  -webkit-app-region: no-drag;
+}
+
+.prompt__box {
+  width: 320px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-raised);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+}
+
+.prompt__title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.prompt__input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+  color: var(--input-fg);
+  font: inherit;
+}
+
+.prompt__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.prompt__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* Duplicates --------------------------------------------------------------- */
+
+.dupes {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.dupes__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 34px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  -webkit-app-region: drag;
+}
+
+.dupes__bar > * {
+  -webkit-app-region: no-drag;
+}
+
+.dupes__spacer {
+  margin-left: auto;
+}
+
+.dupes__warn {
+  color: var(--warn-text-soft);
+}
+
+.dupes__list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.dupe-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  overflow: hidden;
+  /* The list is a column flex container, so its children are shrinkable. Normally
+     a flex item won't shrink below its content, but `overflow: hidden` (here, to
+     clip candidates to the rounded corners) sets the automatic minimum size to
+     zero — so with enough groups to overflow, every one of them squashed flat to
+     its own borders and the list rendered as a stack of blank lines. */
+  flex-shrink: 0;
+}
+
+.dupe-group__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.dupe-group__items {
+  display: flex;
+  flex-direction: column;
+}
+
+.tag {
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tag--exact {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  color: var(--danger-text);
+}
+
+.tag--near {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent-text);
+}
+
+.candidate {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.candidate:first-child {
+  border-top: 0;
+}
+
+.candidate--on {
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+}
+
+.candidate__pick input {
+  accent-color: var(--danger);
+}
+
+.candidate__thumb {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+
+.candidate__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.candidate__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.candidate__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.candidate__meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.candidate__path {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Library selection -------------------------------------------------------- */
+
+.selbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* Never squashed by the grid below it, whatever the content height. */
+  flex-shrink: 0;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+  font-size: 13px;
+}
+
+.selbar__spacer {
+  margin-left: auto;
+}
+
+.card--selected .card__frame {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.card--selected .card__name {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Empty and error states --------------------------------------------------- */
+
+.empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  text-align: center;
+}
+
+.empty__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.empty__body {
+  margin: 0;
+  max-width: 420px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* Bits and pieces ---------------------------------------------------------- */
+
+.button {
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--button-bg);
+  color: var(--button-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--button-hover);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.banner {
+  flex-shrink: 0;
+  margin: 10px 20px 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.banner--error {
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger-text);
+}
+
+.banner--info {
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text);
+}
+
+.muted {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Settings ----------------------------------------------------------------- */
+
+.sidebar__settings {
+  margin-left: auto;
+  /* The brand row is a window drag handle, so the button has to opt back out or
+     the click is swallowed by the titlebar. */
+  -webkit-app-region: no-drag;
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  width: 480px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 60px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-raised);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+}
+
+.settings:focus {
+  outline: none;
+}
+
+.settings__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings__title {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settings__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 18px;
+}
+
+.settings__group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings__hint {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.settings__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings__row--tight {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settings__input,
+.settings__select,
+.settings__number,
+.settings__textarea {
+  padding: 7px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+  color: var(--input-fg);
+  font: inherit;
+  font-size: 13px;
+}
+
+.settings__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings__select {
+  width: 100%;
+}
+
+.settings__number {
+  width: 80px;
+}
+
+.settings__textarea {
+  resize: vertical;
+  line-height: 1.5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.settings__input:focus,
+.settings__select:focus,
+.settings__number:focus,
+.settings__textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.settings__range {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.settings__ok {
+  font-size: 12px;
+  color: var(--success);
+}
+
+.settings__bad {
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.settings__foot {
+  flex-shrink: 0;
+  padding: 10px 18px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Switch ------------------------------------------------------------------- */
+
+.switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.switch input {
+  flex-shrink: 0;
+  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+}
+
+.switch__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.switch__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.switch__hint {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.switch--compact .switch__label {
+  font-weight: 500;
+}
+
+/* Labels ------------------------------------------------------------------- */
+
+.labels {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: min(760px, calc(100vw - 160px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: 11px;
+  color: var(--text);
+  pointer-events: auto;
+}
+
+.label--ai {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+.label__score {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tags --------------------------------------------------------------------- */
+
+.collection-list--capped {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.tag__ai {
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+.addto__check {
+  flex-shrink: 0;
+  width: 10px;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.label__remove {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  /* Dimmed rather than hidden. Hiding it until hover made removing a tag
+     effectively undiscoverable — you can't hover something you don't know is
+     there. */
+  opacity: 0.45;
+  transition: opacity 0.12s ease;
+}
+
+.label:hover .label__remove,
+.label__remove:focus-visible {
+  opacity: 1;
+}
+
+.label__remove:hover {
+  color: var(--danger);
+}
+
+/* Caption ------------------------------------------------------------------ */
+
+.caption {
+  position: absolute;
+  left: 50%;
+  bottom: 52px;
+  z-index: 5;
+  max-width: min(760px, calc(100vw - 160px));
+  margin: 0;
+  padding: 7px 12px;
+  transform: translateX(-50%);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(6px);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  /* Two lines at most: this sits over the image, and a long description would
+     otherwise cover the thing it describes. The full text is in the tooltip. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Scrape mode -------------------------------------------------------------- */
+
+.toolbar__search--url {
+  /* A pasted link is not a search term, and the box should say so before you
+     press anything. */
+  border-color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+/* Collapsible sidebar sections --------------------------------------------- */
+
+.sidebar__disclosure {
+  display: flex;
+  align-items: center;
+  /* Same side padding and icon gap as Favorites and Library, so every row in
+     the sidebar has its icon, its title and its count in the same columns. */
+  gap: 7px;
+  width: 100%;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  /* Inherits the heading's uppercase, letter-spaced, muted treatment rather
+     than restating it, so a collapsed section still reads as a heading. */
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar__disclosure:hover,
+.sidebar__section--active > .sidebar__heading > .sidebar__disclosure {
+  color: var(--text);
+}
+
+.sidebar__disclosure:hover {
+  background: var(--list-hover);
+}
+
+.sidebar__twist {
+  flex-shrink: 0;
+  width: 9px;
+  font-size: 8px;
+  line-height: 1;
+}
+
+.sidebar__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar__tally {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  /* Letter-spacing is inherited from the heading and looks wrong on digits. */
+  letter-spacing: 0;
+  opacity: 0.75;
+}
+
+/* --------------------------------------------------------------------------
+   Co-watching
+   -------------------------------------------------------------------------- */
+
+.button--danger {
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  color: var(--danger);
+}
+
+.button--danger:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--bg-hover));
+}
+
+/* Sharing must never be running invisibly, so the button stays lit for the
+   whole session rather than only while the panel is open. */
+.sidebar__cowatch {
+  position: relative;
+  margin-left: auto;
+  /* The brand row is a window drag handle, so the button has to opt back out or
+     the click is swallowed by the titlebar. Same reason as the gear beside it. */
+  -webkit-app-region: no-drag;
+}
+
+.sidebar__cowatch.is-on {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.sidebar__settings {
+  margin-left: 6px;
+}
+
+.sidebar__badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+
+/* Fills the Watch Together tab, level with the toy settings beneath it. */
+.cowatch {
+  max-width: none;
+}
+
+/* Someone at the door outranks everything else on the panel. */
+.cowatch__knock {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-raised));
+}
+
+.cowatch__knock-who {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.cowatch__fingerprint {
+  margin: 10px 0 2px;
+  font-size: 25px;
+  font-weight: 650;
+  letter-spacing: -0.4px;
+}
+
+.cowatch__addr {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.cowatch__warning {
+  margin: 4px 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: color-mix(in srgb, var(--danger) 80%, var(--text));
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.cowatch__guest {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.cowatch__name {
+  font-weight: 550;
+}
+
+.cowatch__guest .cowatch__addr {
+  margin-right: auto;
+}
+
+.cowatch__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.cowatch__dot--on {
+  background: var(--live);
+}
+
+.cowatch__dot--busy {
+  background: var(--warn);
+}
+
+.cowatch__dot--off {
+  background: var(--text-muted);
+}
+
+.cowatch__chat {
+  max-height: 170px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+}
+
+.cowatch__msg {
+  margin: 0 0 5px;
+  font-size: 13px;
+}
+
+.cowatch__msg b {
+  color: var(--accent);
+}
+
+.cowatch__reacts {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.cowatch__react {
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-hover);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cowatch__react:hover {
+  border-color: var(--accent);
+}
+
+/* A held room has to explain itself: a video that simply refuses to start is
+   indistinguishable from a broken one. */
+.lightbox__holding {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warn) 18%, rgba(10, 10, 14, 0.92));
+  color: var(--warn-text);
+  font-size: 12.5px;
+}
+
+.lightbox__actor {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.reactions {
+  position: fixed;
+  inset: 0;
+  /* Above .prompt and .lightbox, both of which sit at 60. A reaction sent from
+     the session panel would otherwise animate behind the panel that sent it,
+     which reads as the button doing nothing at all. */
+  z-index: 80;
+  pointer-events: none;
+}
+
+.reactions__one {
+  position: absolute;
+  bottom: 90px;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 38px;
+  animation: reaction-rise 2.3s ease-out forwards;
+}
+
+.reactions__from {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Each one drifts a little differently, so several at once read as several
+   rather than stacking into a single glyph. */
+.reactions__one:nth-child(even) {
+  margin-left: 54px;
+}
+
+.reactions__one:nth-child(3n) {
+  margin-left: -62px;
+}
+
+@keyframes reaction-rise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(0.6);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -12px) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -190px) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reactions__one {
+    animation: reaction-fade 2.3s ease-out forwards;
+  }
+
+  @keyframes reaction-fade {
+    0%, 100% { opacity: 0; }
+    20%, 70% { opacity: 1; }
+  }
+}
+
+.cowatch__providers {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 6px;
+  flex-wrap: wrap;
+}
+
+.cowatch__provider {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.cowatch__provider--on {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.cowatch__tick {
+  color: var(--live);
+}
+
+/* Shown rather than hidden: knowing a provider is missing is why you would pick
+   the other one. */
+.cowatch__tick--missing {
+  color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Co-watching bar
+   -------------------------------------------------------------------------- */
+
+/* Above the viewer (50) and the panel (60) so it is never the thing that gets
+   covered, but below reactions (80) so those still fly over it. */
+.cwbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bar-base));
+  border-top: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  -webkit-app-region: no-drag;
+}
+
+.cwbar__row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 12px;
+  min-height: 46px;
+}
+
+.cwbar__toggle {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.cwbar__unread {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+}
+
+.cwbar__who {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex: none;
+  max-width: 40%;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.cwbar__who:hover {
+  background: var(--list-hover);
+}
+
+.cwbar__pip {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.cwbar__knocking {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cwbar__quiet {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  margin: 0;
+}
+
+.cwbar__latest,
+.cwbar__holding {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.cwbar__latest b {
+  color: var(--accent);
+}
+
+.cwbar__holding {
+  color: var(--warn-text);
+}
+
+.cwbar__say {
+  flex: 1;
+  min-width: 140px;
+  max-width: 420px;
+  display: flex;
+}
+
+.cwbar__input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+  color: var(--input-fg);
+  font: inherit;
+}
+
+.cwbar__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.cwbar__reacts {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+
+.cwbar__react {
+  padding: 3px 5px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cwbar__react:hover {
+  background: var(--bg-hover);
+}
+
+.cwbar__log {
+  max-height: 190px;
+  overflow-y: auto;
+  padding: 10px 12px 2px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cwbar__msg {
+  margin: 0 0 5px;
+  font-size: 13px;
+}
+
+.cwbar__msg b {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Favorites ----------------------------------------------------------------- */
+
+.card__heart {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  /* Hidden until wanted, so an unfiled library is not a wall of outlines. A
+     favorite always shows, which is the point of having one. */
+  opacity: 0;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.card:hover .card__heart,
+.card:focus-within .card__heart,
+.card__heart:focus-visible,
+.card__heart--on {
+  opacity: 1;
+}
+
+.card__heart:hover {
+  transform: scale(1.12);
+}
+
+.card__heart--on {
+  color: var(--heart);
+}
+
+.icon-button--heart,
+.icon-button--heart:hover {
+  background: color-mix(in srgb, var(--heart) 16%, transparent);
+  border-color: var(--heart);
+  color: var(--heart);
+}
+
+.nav-item__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/*
+ * Every sidebar icon is in the heart's pink, and fills in the way the heart
+ * does when its entry is pointed at or selected. The chain links have nothing
+ * to fill, so they thicken instead.
+ */
+.nav-item__label svg,
+.sidebar__icon svg {
+  color: var(--icon);
+}
+
+/* The heart is the favourite colour itself, not the icon colour. */
+.nav-item--favorites .nav-item__label svg {
+  color: var(--heart);
+}
+
+.icon__fill {
+  fill: transparent;
+  transition: fill 0.15s;
+}
+
+.nav-item:hover:not(:disabled) .icon__fill,
+.nav-item--active .icon__fill,
+.sidebar__disclosure:hover .icon__fill,
+.sidebar__section--active > .sidebar__heading .icon__fill {
+  fill: currentColor;
+}
+
+.nav-item--favorites:hover:not(:disabled) .nav-item__label svg path {
+  fill: currentColor;
+}
+
+.icon__thicken {
+  transition: stroke-width 0.15s;
+}
+
+.sidebar__disclosure:hover .icon__thicken,
+.sidebar__section--active > .sidebar__heading .icon__thicken {
+  stroke-width: 1.8;
+}
+
+/* Favorites sits a little apart from Library below it. */
+.nav-item--favorites {
+  margin-bottom: 6px;
+}
+
+.candidate__heart {
+  display: inline-flex;
+  margin-right: 5px;
+  vertical-align: -1px;
+  color: var(--heart);
+}
+
+/* Session control ---------------------------------------------------------- */
+
+.cwbar__control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 3px 4px 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.cwbar__control--nudge {
+  animation: cwbar-nudge 0.9s ease-out;
+}
+
+@keyframes cwbar-nudge {
+  0%,
+  40% {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+.cwbar__control-text {
+  color: var(--text-muted);
+}
+
+.cwbar__control-text b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.cwbar__control-button {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.cwbar__control-button:hover {
+  border-color: var(--accent);
+}
+
+.cwbar__control-button--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* Watching along: the transport controls are shown but do nothing. */
+.controls__button:disabled,
+.controls__range:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Toy ---------------------------------------------------------------------- */
+
+/* Leads the brand row's buttons, so it takes the push to the right that the
+   co-watch button used to. */
+.sidebar__toy {
+  margin-left: auto;
+  -webkit-app-region: no-drag;
+}
+
+.sidebar__toy + .sidebar__cowatch {
+  margin-left: 6px;
+}
+
+/* Connected is never invisible: lit for as long as a toy is attached. */
+.sidebar__toy.is-on {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.sidebar__toy.is-stopped {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+.toy .player__progress {
+  width: 100%;
+}
+
+.toy__devices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.toy__device {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+}
+
+.toy__device-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toy__device-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.toy__stop {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* The one control that matters most is the biggest thing in the panel. */
+.toy__big {
+  width: 100%;
+  padding: 11px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.toy__meter {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+
+.toy__meter-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.12s linear;
+}
+
+.toy__patterns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.toy__patterns .cowatch__provider:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.toy__value {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.toy__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toy__foot .button {
+  margin-left: auto;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.toychip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+}
+
+.toychip:hover {
+  border-color: var(--danger);
+}
+
+.toychip--stopped {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.toychip--stopped:hover {
+  border-color: var(--accent);
+}
+
+/* A tiny level meter, so what the toy is doing can be seen without the panel. */
+.toychip__meter {
+  display: flex;
+  align-items: flex-end;
+  width: 5px;
+  height: 13px;
+  border-radius: 2px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+
+.toychip__fill {
+  width: 100%;
+  background: var(--accent);
+  transition: height 0.12s linear;
+}
+
+/* Toy pattern bar -------------------------------------------------------- */
+
+.toybar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  height: 38px;
+  padding: 6px 12px;
+  background: var(--controls-bg);
+  border-top: 1px solid var(--border);
+}
+
+.toybar__label {
+  width: 58px;
+  flex-shrink: 0;
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toybar__track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+
+.toybar__track--seekable {
+  cursor: pointer;
+}
+
+.toybar__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.toybar__ahead {
+  fill: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.toybar__played {
+  fill: var(--accent);
+}
+
+/*
+ * What the toy is actually getting, over the curve of what the video asks
+ * for. Coloured by whichever source is driving, so a pattern of yours and a
+ * guest's buzz are told apart from the video itself.
+ */
+.toybar__sent {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.toybar__sent--script {
+  stroke: var(--text);
+}
+
+.toybar__sent--pattern {
+  stroke: var(--icon);
+}
+
+.toybar__sent--guest {
+  stroke: var(--live);
+}
+
+/* With no curve behind it, the trace's own body sits back and the line leads. */
+.toybar__trace {
+  fill: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.toybar__head {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+  pointer-events: none;
+}
+
+.toybar__level {
+  display: flex;
+  align-items: flex-end;
+  width: 6px;
+  height: 100%;
+  flex-shrink: 0;
+  border-radius: 3px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+
+.toybar__level-fill {
+  width: 100%;
+  background: var(--accent);
+  transition: height 0.12s linear;
+}
+
+/* Stopped reads as stopped: the colour goes, the shape stays. */
+.toybar--stopped .toybar__played,
+.toybar--stopped .toybar__level-fill {
+  fill: var(--text-muted);
+  background: var(--text-muted);
+}
+
+.toybar--stopped .toybar__sent {
+  stroke: var(--text-muted);
+}
+
+/* In fullscreen the bar rides under the controls, and fades with them. */
+.player:fullscreen .toybar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(10, 10, 14, 0.85);
+  border-top: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.player:fullscreen:has(.toybar) .controls {
+  bottom: 38px;
+}
+
+.player:fullscreen:hover .toybar,
+.player:fullscreen:has(.controls:focus-within) .toybar {
+  opacity: 1;
+}
+
+/* Pattern editor ----------------------------------------------------------- */
+
+.pattern .settings__row .settings__label {
+  flex: 1;
+}
+
+.pattern__graph {
+  position: relative;
+  height: 170px;
+  /* Room for the handles on the edges, which sit half outside the box. */
+  margin: 6px 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-sunken);
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+}
+
+.pattern__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pattern__grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.pattern__area {
+  fill: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.pattern__line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.pattern__point {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  padding: 0;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: var(--bg-raised);
+  cursor: grab;
+}
+
+.pattern__point--on {
+  background: var(--accent);
+}
+
+.pattern__point:active {
+  cursor: grabbing;
+}
+
+.pattern__head {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+  pointer-events: none;
+}
+
+.toy__custom {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.toy__custom .cowatch__provider {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.toy__edit {
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.toy__edit:hover {
+  color: var(--text);
+}
+
+.toy__new {
+  border-style: dashed;
+}
+
+/* Tabs in a sheet --------------------------------------------------------- */
+
+/* Shared by the Toy panel and AI Settings, so every tabbed sheet reads alike. */
+.tabbar {
+  display: flex;
+  gap: 2px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabbar__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tabbar__tab:hover {
+  color: var(--text);
+}
+
+.tabbar__tab--on {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+/* Something on that tab is live — a session running, AI switched off. */
+.tabbar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.tabpanel[hidden] {
+  display: none;
+}
+
+/* The first section on a tab needs no divider above it. */
+.tabpanel > .settings__group:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* One height for every tab, so switching does not make the sheet jump. The
+   body scrolls instead when a tab has more than fits. */
+.settings--tabbed {
+  height: min(640px, calc(100vh - 60px));
+}
+
+/* Sits between the header and the tabs, so it stays put whichever tab is open. */
+.toy > .toy__stop {
+  margin: 0;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.toy__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Random's right-click choice: three short options need no more room. */
+.addto__menu--narrow {
+  width: 150px;
+}
+
+.settings__note {
+  margin: 0 0 14px;
+}
+
+/* A button that reads as a link inside a sentence. */
+.linkish {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* The toy, watch-together and settings buttons, on their own row beneath the
+   name. The row as a whole opts out of the titlebar drag, so the gaps between
+   buttons do not start a window drag by accident. */
+.sidebar__brand {
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+
+.sidebar__actions {
+  display: flex;
+  flex-basis: 100%;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.sidebar__actions .sidebar__toy,
+.sidebar__actions .sidebar__cowatch,
+.sidebar__actions .sidebar__settings {
+  margin-left: 0;
+}
+
+/* Settings sheet ----------------------------------------------------------- */
+
+/* Wide enough for a rail of tabs beside a column of settings. */
+.settings--sheet {
+  width: 780px;
+  height: min(680px, calc(100vh - 60px));
+}
+
+.sheet {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.sheet__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 190px;
+  flex-shrink: 0;
+  padding: 14px 10px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.sheet__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sheet__group-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.sheet__tab {
+  display: flex;
+  /* Stepped in under its heading, the way sidebar items sit under theirs;
+     the highlight on the chosen one is stepped in with it. */
+  margin-left: 20px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sheet__tab:hover {
+  background: var(--list-hover);
+  color: var(--text);
+}
+
+.sheet__tab--on {
+  background: var(--list-active);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sheet__tab .tabbar__dot,
+.sheet__badge {
+  margin-left: auto;
+}
+
+.sheet__badge {
+  position: static;
+}
+
+.sheet__content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Stop and banners sit above the tab they belong to, inside the scroll. */
+.sheet__content > .toy__stop {
+  margin: 0 0 16px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings__banner {
+  margin: 0 0 14px;
+}
+
+/* The sidebar's footer: pinned to the bottom, with Settings at the right. */
+.sidebar__foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  margin: auto -14px 0;
+  padding: 10px 14px;
+  background: var(--sidebar-bg);
+  border-top: 1px solid var(--border);
+}
+
+.sidebar__foot > .sidebar__settings {
+  position: relative;
+  margin-left: auto;
+}
+
+/* The mark is clickable, so it opts out of the title bar drag around it. */
+.sidebar__mark-button {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: default;
+  -webkit-app-region: no-drag;
+}
+
+/* A section's icon, before its title, in the same column as the nav icons. */
+.sidebar__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* Renaming in place keeps the name where it was, under the section title. */
+.collection > .collection__input {
+  margin-left: 28px;
+  width: calc(100% - 28px);
+}
+
+/* Features' own tabs, across the top of its content. */
+.sheet__subtabs {
+  margin: -16px -18px 16px;
+  padding: 0 18px;
+}
+
+/* Appearance --------------------------------------------------------------- */
+
+.button--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.button--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, var(--text));
+}
+
+.button--on {
+  border-color: var(--accent);
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 16%, var(--button-bg));
+}
+
+.styling {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.styling__slots {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.styling__slot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.styling__swatches {
+  display: flex;
+  gap: 4px;
+}
+
+.styling__swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+.styling__edithead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.styling__sides {
+  flex: 1;
+  padding: 0;
+}
+
+.styling__row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.styling__grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.styling__colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 14px 20px;
+}
+
+.styling__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.styling__grouptitle {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.styling__color {
+  display: grid;
+  grid-template-columns: 26px 1fr 128px 18px;
+  align-items: center;
+  gap: 8px;
+}
+
+.styling__picker {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--text) 22%, transparent);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.styling__picker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.styling__colorlabel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.styling__colorlabel code {
+  font-size: 10px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.styling__hex {
+  width: 100%;
+  padding: 5px 8px;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11.5px;
+}
+
+.styling__reset {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+button.styling__reset:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.styling__disclosure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.styling__chevron {
+  display: inline-block;
+  width: 10px;
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 0.15s;
+}
+
+.styling__chevron--open {
+  transform: rotate(90deg);
+}
+
+.styling__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.styling__spacer {
+  flex: 1;
+}
+
+.styling__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.styling__problems {
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
+  font-size: 11.5px;
+  color: var(--warn-text);
+}
+
+.styling__problems ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+}
+
+/* The preview: the app in miniature, reading the same variables. */
+.themeprev {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  height: 170px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 11px;
+}
+
+.themeprev__side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-fg);
+  border-right: 1px solid var(--border);
+}
+
+.themeprev__nav {
+  padding: 4px 7px;
+  border-radius: 5px;
+}
+
+.themeprev__nav--on {
+  background: var(--sidebar-active);
+  font-weight: 600;
+}
+
+.themeprev__nav--muted {
+  color: var(--text-muted);
+}
+
+.themeprev__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.themeprev__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.themeprev__search {
+  flex: 1;
+  padding: 3px 7px;
+  border: 1px solid var(--input-border);
+  border-radius: 5px;
+  background: var(--bg-sunken);
+  color: var(--text-muted);
+}
+
+.themeprev__button {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--button-bg);
+  color: var(--button-fg);
+}
+
+.themeprev__chip {
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.themeprev__grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px;
+}
+
+.themeprev__card {
+  position: relative;
+  border-radius: 6px;
+  background: var(--card-bg);
+}
+
+.themeprev__card--heart {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 5px;
+  color: var(--heart);
+}
+
+.themeprev__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--controls-bg);
+  border-top: 1px solid var(--border);
+}
+
+.themeprev__track {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-hover);
+}
+
+.themeprev__progress {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.themeprev__status--ok {
+  color: var(--success);
+}
+
+.themeprev__status--bad {
+  color: var(--danger);
+}
+
+/* A hint led by a small icon. */
+.settings__hint--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pattern__title,
+.settings__heading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.settings__heading {
+  margin-bottom: 14px;
+}
+
+/* A command to copy, set apart from the sentence around it. */
+.settings__code {
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-sunken);
+  color: var(--text);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.95em;
+  user-select: all;
+}
+
+.banner--dismissable {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.banner--dismissable > span {
+  flex: 1;
+}
+
+.banner__close {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.banner__close:hover {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+/* Where a session will be reachable from, then the button that starts it. */
+.cowatch__start {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cowatch__start > .cowatch__providers {
+  margin: 0;
+}
+
+.cowatch__start > .button {
+  margin-top: 6px;
+}
+
+/*
+ * Every page opens the same way: title, a line under it, and a rule across
+ * the whole content area.
+ */
+.sheet__pagehead {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 -18px 16px;
+  padding: 0 18px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sheet__pagehead > .settings__heading {
+  margin: 0;
+}
+
+/* Features' own tabs sit straight under the rule. */
+.sheet__pagehead + .sheet__subtabs {
+  margin-top: -16px;
+}
+
+/* The page head already draws the rule, so a page's first group does not draw another. */
+.sheet__content .tabpanel > .settings__group:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.pattern__close {
+  margin-left: auto;
+}
+
+/* The toys found, in a box that is there even before there are any. */
+.toy__list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+
+.toy__list > .toy__device {
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.toy__list > .toy__device + .toy__device {
+  border-top: 1px solid var(--border);
+}
+
+.toy__list-empty {
+  padding: 12px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.toy__list-empty:empty {
+  padding: 0;
+}
+
+/* The Settings rail's group icons, in the sidebar icons' pink, filled while a page of theirs is open. */
+.sheet__group-icon {
+  display: inline-flex;
+  color: var(--icon);
+}
+
+.sheet__group:has(.sheet__tab--on) .sheet__group-icon .icon__fill {
+  fill: currentColor;
+}
+
+/* The duplicates page's title, over its count, clear of the traffic lights. */
+.dupes__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dupes__heading {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.dupes__summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.dupes__summary strong {
+  color: var(--text);
+}
+
+.dupes__bar {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+/*
+ * A selected row keeps its tint under the pointer, a touch deeper, rather than
+ * falling back to the plain hover. Written out per row, since each row's own
+ * hover rule is more specific than its selected one.
+ */
+.collection:has(.collection__name--on) {
+  background: var(--sidebar-active);
+}
+
+.nav-item.nav-item--active:hover:not(:disabled),
+.tree__row.tree__row--on:hover,
+.collection:has(.collection__name--on):hover,
+.sheet__tab.sheet__tab--on:hover,
+.segmented__item.segmented__item--on:hover {
+  background: var(--list-active-hover);
+}
+
+/*
+ * Every icon button is in the icon colour, brightening under the pointer.
+ * Buttons that are on, or carry a state of their own, keep theirs.
+ */
+.icon-button:not(.icon-button--on):not(.icon-button--heart):not(.is-on):not(.is-stopped),
+.controls__button {
+  color: var(--icon);
+}
+
+.icon-button:not(.icon-button--on):not(.icon-button--heart):not(.is-on):not(.is-stopped):hover:not(:disabled),
+.controls__button:hover {
+  color: color-mix(in srgb, var(--icon) 70%, var(--text));
+}
+
+/* The footer's Rescan, left, opposite Settings; it turns while a scan runs. */
+.sidebar__rescan:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.sidebar__rescan.is-scanning svg {
+  animation: rescan-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes rescan-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.lightbox__side {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.lightbox__side--end {
+  justify-content: flex-end;
+}
+
+/* The open item's details, as a card. Where it sits is up to whoever places it. */
+.mediainfo {
+  width: 240px;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-raised) 92%, transparent);
+  backdrop-filter: blur(8px);
+  font-size: 12px;
+}
+
+.mediainfo__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.mediainfo__row dt {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.mediainfo__row dd {
+  margin: 2px 0 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* In the viewer: down the left, clear of the bar above and the previous arrow. */
+.lightbox__info {
+  position: absolute;
+  top: 96px;
+  left: 76px;
+  bottom: 24px;
+  z-index: 4;
+  /* Centred in the space below the bar while it is shorter than that space;
+     scrolls within it once it is not. */
+  height: fit-content;
+  max-height: calc(100% - 120px);
+  margin: auto 0;
+}
+
+/* Autoplay's countdown on an image: a line along its bottom edge, shrinking to nothing. */
+.viewer__timer {
+  position: absolute;
+  height: 3px;
+  background: var(--icon);
+  /* Anchored on the right, so it drains from left to right. */
+  transform-origin: right center;
+  animation-name: viewer-timer;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  pointer-events: none;
+}
+
+@keyframes viewer-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.mediainfo__section + .mediainfo__section {
+  margin-top: 16px;
+}
+
+/* Each section's heading sits over a rule, like the sidebar's pink ones. */
+.mediainfo__title {
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--icon) 70%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--icon);
+}
+
+/* The viewer's toolbar groups, split like the sidebar's sections but upright.
+   Stronger than the sidebar's, since the viewer's near-black dims a faint pink to brown. */
+.lightbox__divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: color-mix(in srgb, var(--icon) 70%, transparent);
+}
+
+/* An icon that is switched on fills in, like the sidebar's selected entries. */
+.icon-button--toggled .icon__fill {
+  fill: currentColor;
+}
+
+.icon-button--toggled {
+  background: var(--list-active);
+}
+
+/* The parts of a filled icon cut back out of it, drawn in the background. */
+.icon__knockout {
+  stroke: currentColor;
+  fill: none;
+}
+
+.icon-button--toggled .icon__knockout {
+  stroke: var(--bg);
+}
+
+/* Ends the session, from the chat bar. Plain until pointed at, then plainly a stop. */
+.cwbar__stop {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--danger-text);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.cwbar__stop:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+/* Up next: the session's queue, on the right, in the same card as the details panel. */
+.lightbox__upnext {
+  position: absolute;
+  top: 96px;
+  right: 76px;
+  bottom: 24px;
+  z-index: 4;
+  width: 260px;
+  height: fit-content;
+  max-height: calc(100% - 120px);
+  margin: auto 0;
+}
+
+.upnext__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.upnext__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upnext__thumb {
+  flex-shrink: 0;
+  width: 42px;
+  height: 26px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--card-bg);
+}
+
+.upnext__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upnext__button {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.upnext__button:hover:not(:disabled) {
+  background: var(--list-hover);
+  color: var(--text);
+}
+
+.upnext__button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* The toy chip and its pattern menu, side by side as one control. */
+.toychip__shell {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.toychip__shell > .toychip {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.toychip__more {
+  margin-left: -1px;
+  padding: 4px 7px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.toychip__more--on {
+  border-color: var(--icon);
+  color: var(--icon);
+}
+
+/* The toy chip takes on the look of wherever it sits: the toolbar's controls
+   are raised and full size, while the viewer's are small outlined pills. */
+.toolbar .toychip,
+.toolbar .toychip__more {
+  padding: 6px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--bg-raised);
+  color: var(--input-fg);
+  font-size: inherit;
+}
+
+.toolbar .toychip__more {
+  padding: 6px 8px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.toolbar .toychip {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.toolbar .toychip__more {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.toolbar .toychip:hover,
+.toolbar .toychip__more:hover,
+.toolbar .toychip__more--on {
+  border-color: var(--accent);
+}
+
+.toolbar .toychip__more--on {
+  color: var(--icon);
+}
+
+/* A pattern's mark, standing where a tick stands in other menus. */
+.toychip__glyph {
+  flex-shrink: 0;
+  width: 14px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.addto__item[aria-checked='true'] .toychip__glyph {
+  color: var(--icon);
+}

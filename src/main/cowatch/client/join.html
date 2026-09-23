@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Join session</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    background: #0b0b0f; color: #e7e7ee; padding: 24px;
+    font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .card { width: 100%; max-width: 380px; }
+  h1 { font-size: 21px; margin: 0 0 6px; font-weight: 650; }
+  p { color: #9a9aab; margin: 0 0 20px; }
+  label { display: block; font-size: 13px; color: #9a9aab; margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 11px 13px; border-radius: 9px; font: inherit;
+    background: #16161d; border: 1px solid #2a2a36; color: #e7e7ee;
+  }
+  input:focus { outline: 2px solid #6b5cff; outline-offset: 1px; border-color: transparent; }
+  button {
+    width: 100%; margin-top: 12px; padding: 11px; border: 0; border-radius: 9px;
+    background: #6b5cff; color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { opacity: .5; cursor: default; }
+  .word {
+    font-size: 27px; font-weight: 650; letter-spacing: -.5px;
+    text-align: center; margin: 18px 0 6px; color: #fff;
+  }
+  .hint { text-align: center; font-size: 13px; color: #9a9aab; }
+  .pulse { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .45 } }
+  .error { color: #ff8b8b; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="ask">
+    <h1>Join the session</h1>
+    <p>Pick a name so they know it's you.</p>
+    <label for="name">Your name</label>
+    <input id="name" maxlength="24" autocomplete="nickname" placeholder="Sam">
+    <button id="go">Ask to join</button>
+    <p id="err" class="error" style="margin-top:12px" hidden></p>
+  </div>
+
+  <div id="wait" hidden>
+    <h1>Waiting to be let in</h1>
+    <p>Read these two words out to them - they'll see the same pair.</p>
+    <div class="word pulse" id="fingerprint"></div>
+    <p class="hint">They have to approve you before anything loads.</p>
+  </div>
+
+  <div id="no" hidden>
+    <h1>Not this time</h1>
+    <p>They didn't let you in, or the invite has expired. Ask for a fresh link.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var invite = decodeURIComponent(location.pathname.split('/')[2] || '');
+  var ask = document.getElementById('ask');
+  var wait = document.getElementById('wait');
+  var no = document.getElementById('no');
+  var err = document.getElementById('err');
+  var name = document.getElementById('name');
+  var go = document.getElementById('go');
+
+  try { name.value = localStorage.getItem('goonlib.name') || ''; } catch (e) {}
+
+  function show(el) {
+    ask.hidden = wait.hidden = no.hidden = true;
+    el.hidden = false;
+  }
+
+  function fail(message) {
+    err.textContent = message;
+    err.hidden = false;
+    go.disabled = false;
+  }
+
+  go.addEventListener('click', function () {
+    go.disabled = true;
+    err.hidden = true;
+    try { localStorage.setItem('goonlib.name', name.value); } catch (e) {}
+
+    fetch('/api/knock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ invite: invite, name: name.value })
+    })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+      .then(function (res) {
+        if (!res.ok) {
+          fail(res.body.error === 'full' ? 'That session is full right now.' : 'That invite link is not valid.');
+          return;
+        }
+        document.getElementById('fingerprint').textContent = res.body.fingerprint;
+        show(wait);
+        poll(res.body.id);
+      })
+      .catch(function () { fail('Could not reach them. Are you still online?'); });
+  });
+
+  name.addEventListener('keydown', function (e) { if (e.key === 'Enter') go.click(); });
+
+  function poll(id) {
+    fetch('/api/knock?id=' + encodeURIComponent(id))
+      .then(function (r) { return r.json(); })
+      .then(function (body) {
+        if (body.status === 'approved') { location.href = '/'; return; }
+        if (body.status === 'denied') { show(no); return; }
+        setTimeout(function () { poll(id); }, 1500);
+      })
+      .catch(function () { setTimeout(function () { poll(id); }, 3000); });
+  }
+})();
+</script>
+</body>
+</html>

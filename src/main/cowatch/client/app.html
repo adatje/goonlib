@@ -1,0 +1,1776 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Watching together</title>
+<style>
+  :root {
+    /* Midnight. The host's theme, when they have one, is added after this. */
+    color-scheme: dark;
+    --bg: #0b0b0f; --text: #e7e7ee; --text-muted: #8b8b9c; --accent: #7c6cff; --accent-fg: #ffffff;
+    --bg-raised: #14141a; --border: #26262f; --bg-hover: #1d1d26; --list-hover: #ff5c8a17; --list-active: #ff5c8a2e;
+    --bg-sunken: #08080b; --heart: #ff5c8a; --live: #4ad07a; --warn: #f0b23c; --warn-text: #f0c069;
+    --accent-text: #c3b9ff;
+    --line: var(--border); --dim: var(--text-muted);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text); overflow: hidden;
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  button { font: inherit; cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  .app { display: grid; grid-template-columns: 300px 1fr 280px; height: 100dvh; }
+  .col { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+  .browse { border-right: 1px solid var(--line); }
+  .side { border-left: 1px solid var(--line); }
+
+  .bar {
+    display: flex; gap: 6px; align-items: center; padding: 9px 10px;
+    border-bottom: 1px solid var(--line); flex: none;
+  }
+  .bar input[type=search] {
+    flex: 1; min-width: 0; padding: 7px 10px; border-radius: 8px;
+    background: var(--bg-raised); border: 1px solid var(--border); color: inherit; font: inherit;
+  }
+  .chip {
+    padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border);
+    background: transparent; color: var(--dim); white-space: nowrap;
+  }
+  .chip[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+
+  /* Folders / Collections / Tags */
+  .tabs { display: flex; flex: none; border-bottom: 1px solid var(--line); }
+  .tab {
+    flex: 1; padding: 8px 4px; border: 0; background: transparent; color: var(--dim);
+    border-bottom: 2px solid transparent; font-size: 12.5px;
+  }
+  .tab[aria-selected=true] { color: var(--text); border-bottom-color: var(--accent); }
+
+  .crumbs {
+    display: flex; flex-wrap: wrap; gap: 2px; align-items: center;
+    padding: 7px 10px; flex: none; border-bottom: 1px solid var(--line); font-size: 12px;
+  }
+  .crumb { border: 0; background: transparent; color: var(--accent); padding: 1px 3px; }
+  .crumb:last-child { color: var(--dim); }
+  .crumbs .sep { color: color-mix(in srgb, var(--text-muted) 55%, var(--bg)); }
+
+  .nav {
+    flex: none; max-height: 34%; overflow-y: auto; padding: 5px;
+    border-bottom: 1px solid var(--line);
+  }
+  .nav__row {
+    display: flex; gap: 8px; align-items: center; width: 100%; padding: 6px 8px;
+    border: 0; border-radius: 7px; background: transparent; color: inherit; text-align: left;
+  }
+  .nav__row:hover { background: var(--list-hover); }
+  .nav__row[aria-current=true] { background: var(--list-active); color: var(--text); }
+  .nav__row span:first-of-type {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .nav__count { color: var(--dim); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  .nav__more { color: color-mix(in srgb, var(--text-muted) 65%, var(--bg)); }
+  .nav__empty { padding: 10px; color: var(--dim); font-size: 12.5px; }
+
+  .grid {
+    flex: 1; overflow-y: auto; padding: 9px; display: grid; gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); align-content: start;
+  }
+  .cell {
+    position: relative; aspect-ratio: 1; border: 0; padding: 0; border-radius: 9px;
+    overflow: hidden; background: var(--bg-raised);
+  }
+  .cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cell:hover { outline: 2px solid var(--accent); }
+  .cell--playing { outline: 2px solid var(--accent); }
+  .cell .dur {
+    position: absolute; right: 4px; bottom: 4px; padding: 1px 5px; border-radius: 5px;
+    background: rgba(0,0,0,.75); font-size: 11px; font-variant-numeric: tabular-nums;
+  }
+  .cell .plus {
+    position: absolute; left: 4px; top: 4px; width: 22px; height: 22px; border-radius: 6px;
+    background: rgba(0,0,0,.7); color: #fff; border: 0; line-height: 20px; opacity: 0;
+  }
+  .cell:hover .plus, .cell:focus-within .plus { opacity: 1; }
+  /* The host's favorites. Shown, never editable: a guest cannot change the library. */
+  .cell .fav { position: absolute; top: 5px; right: 6px; color: var(--heart); font-size: 13px;
+    line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,.8); pointer-events: none; }
+
+  .stage {
+    flex: 1; position: relative; display: grid; place-items: center; background: #000; min-height: 0;
+    /* One cell as big as the stage, and no bigger: without it a tall video sizes
+       the row to itself and pushes the controls off the bottom. */
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr); overflow: hidden;
+  }
+  .stage video, .stage img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .kinds-spacer { flex: 1; }
+  .shuffle { display: inline-flex; align-items: center; justify-content: center; padding: 5px 9px; }
+  .controls button.icon[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .empty { color: var(--dim); text-align: center; padding: 30px; }
+
+  .veil {
+    position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+    background: color-mix(in srgb, var(--bg) 90%, transparent); padding: 24px; z-index: 3;
+  }
+  .veil h2 { margin: 0 0 6px; font-size: 19px; }
+  .veil p { margin: 0; color: var(--dim); }
+  .veil button {
+    margin-top: 16px; padding: 11px 22px; border: 0; border-radius: 9px;
+    background: var(--accent); color: var(--accent-fg); font-weight: 600;
+  }
+
+  /* Shown when the browser allowed picture but not sound. */
+  .sound {
+    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 4;
+    padding: 8px 16px; border: 0; border-radius: 999px;
+    background: var(--accent); color: var(--accent-fg); font-weight: 600;
+  }
+
+  .controls {
+    display: flex; gap: 10px; align-items: center; padding: 10px 12px;
+    border-top: 1px solid var(--line); flex: none;
+  }
+  .controls button.icon {
+    width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg-raised); color: inherit;
+  }
+  .controls input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  .time { font-variant-numeric: tabular-nums; color: var(--dim); font-size: 12px; }
+
+  .who { display: flex; gap: 8px; align-items: center; padding: 8px 12px; flex: none;
+         border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+           white-space: nowrap; color: var(--dim); font-size: 12.5px; }
+  .pip { display: flex; gap: 5px; align-items: center; font-size: 12px; color: var(--dim); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live); }
+  .dot.off { background: var(--text-muted); }
+  .dot.busy { background: var(--warn); }
+
+  .note { padding: 7px 12px; background: color-mix(in srgb, var(--warn) 14%, var(--bg)); color: var(--warn-text); font-size: 12px; flex: none; }
+
+  /* Who is driving, and asking to. */
+  .control { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--dim);
+             white-space: nowrap; }
+  .control b { color: var(--text); font-weight: 600; }
+  .control button { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border);
+                    background: transparent; color: inherit; font: inherit; }
+  .control button.go { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .asking { display: flex; gap: 8px; align-items: center; padding: 7px 12px; flex: none;
+            background: color-mix(in srgb, var(--accent) 14%, var(--bg)); font-size: 12.5px; }
+  .asking span { flex: 1; }
+  .asking button { padding: 4px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+                   background: transparent; color: var(--text); font: inherit; }
+  .asking button.go { background: var(--accent); border-color: var(--accent); }
+  .nudge { animation: nudge .9s ease-out; }
+  @keyframes nudge { 0%, 40% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 999px; } }
+  .controls button:disabled, .controls input:disabled { opacity: .4; }
+
+  .msgs { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 7px; }
+  .msg { font-size: 13px; word-break: break-word; }
+  .msg b { color: var(--accent-text); font-weight: 600; }
+
+  .reacts { display: flex; gap: 3px; padding: 7px 8px; border-top: 1px solid var(--line);
+            flex: none; flex-wrap: wrap; justify-content: center; }
+  .reacts button { border: 0; background: var(--bg-raised); border-radius: 8px; padding: 4px 7px; font-size: 15px; }
+  .reacts button:hover { background: var(--bg-hover); }
+
+  .buzz { display: flex; flex-direction: column; gap: 7px; padding: 8px 10px;
+          border-top: 1px solid var(--line); flex: none; font-size: 12px; color: var(--dim); }
+  .buzz .row { display: flex; gap: 6px; align-items: center; }
+  .buzz .row input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  .buzz .row output { width: 34px; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+  .buzz .patterns { display: flex; gap: 4px; flex-wrap: wrap; }
+  .buzz .patterns .chip { padding: 3px 9px; }
+  .buzz .go { padding: 7px 10px; border-radius: 8px; border: 0; background: var(--accent);
+              color: var(--accent-fg); font: inherit; font-weight: 600; }
+  .buzz .go:disabled { opacity: .45; }
+  .buzz .said { min-height: 1em; }
+
+  .say { display: flex; gap: 6px; padding: 10px; border-top: 1px solid var(--line); flex: none; }
+  .say input {
+    flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px;
+    background: var(--bg-raised); border: 1px solid var(--border); color: inherit; font: inherit;
+  }
+
+  .queue { border-top: 1px solid var(--line); max-height: 28%; overflow-y: auto; flex: none; }
+  .queue h3 { margin: 0; padding: 8px 12px 4px; font-size: 11px; text-transform: uppercase;
+              letter-spacing: .08em; color: var(--dim); }
+  .qrow { display: flex; gap: 8px; align-items: center; padding: 4px 12px; }
+  .qrow img { width: 42px; height: 26px; object-fit: cover; border-radius: 4px; flex: none; }
+  .qrow span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+               white-space: nowrap; font-size: 12px; }
+  .qrow button { border: 0; background: transparent; color: var(--dim); }
+
+  .float {
+    position: absolute; bottom: 70px; left: 50%; pointer-events: none; z-index: 5;
+    font-size: 34px; animation: rise 2.2s ease-out forwards;
+  }
+  @keyframes rise {
+    0%   { opacity: 0; transform: translate(-50%, 10px) scale(.6); }
+    18%  { opacity: 1; transform: translate(-50%, -10px) scale(1.1); }
+    100% { opacity: 0; transform: translate(-50%, -170px) scale(1); }
+  }
+
+  .burger { display: none; }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    .browse, .side { position: fixed; inset: 0; z-index: 10; background: var(--bg); }
+    .nav { max-height: 45%; }
+    .burger { display: inline-flex; }
+  }
+
+  /* ---------------------------------------------------------------------
+   * The app's look. Laid over the rules above, which it overrides.
+   * ------------------------------------------------------------------ */
+  :root {
+    --icon: var(--heart); --viewer-bg: #060609; --controls-bg: var(--bg-raised);
+    --card-bg: var(--bg-raised); --list-active-hover: #ff5c8a38; --sidebar-bg: var(--bg-raised);
+    --danger: #ff6b6b; --input-border: var(--border); --radius: 10px;
+  }
+  body { font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .app { grid-template-columns: 300px 1fr; }
+
+  /* Library: the app's sidebar */
+  .browse { background: var(--sidebar-bg); border-right: 1px solid var(--border); }
+  .brand { display: flex; align-items: baseline; gap: 8px; padding: 16px 14px 6px; flex: none; }
+  .brand__name { font-weight: 700; font-size: 15px; }
+  .brand__sub { color: var(--text-muted); font-size: 12px; }
+  .browse .bar { border-bottom: 0; padding: 6px 14px; }
+  .bar input[type=search] { background: var(--bg-sunken); border-color: var(--input-border); padding: 7px 11px; }
+  .browse .bar:nth-of-type(2) { gap: 0; }
+  .browse .chip[data-kind] {
+    border-radius: 0; border-color: var(--border); border-right-width: 0; padding: 4px 11px;
+    background: var(--bg-sunken); color: var(--text-muted); font-size: 12px;
+  }
+  .browse .chip[data-kind="all"] { border-radius: 8px 0 0 8px; }
+  .browse .chip[data-kind="image"] { border-radius: 0 8px 8px 0; border-right-width: 1px; }
+  .browse .chip[data-kind][aria-pressed=true] { background: var(--list-active); border-color: var(--border); color: var(--text); }
+  .shuffle { border-radius: 8px; color: var(--icon); border-color: var(--border); background: transparent; }
+  .shuffle[aria-pressed=true] { background: var(--list-active); border-color: var(--border); color: var(--icon); }
+
+  .tabs { border-bottom: 0; padding: 8px 10px 0; gap: 2px; flex-wrap: wrap; }
+  .tab {
+    flex: none; padding: 6px 10px; border: 0; border-radius: 7px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .7px; color: var(--text-muted);
+  }
+  .tab:hover { background: var(--list-hover); color: var(--text); }
+  .tab[aria-selected=true] { background: var(--list-active); color: var(--text); }
+  .crumbs { border-bottom: 0; padding: 8px 14px 2px; }
+  .crumb { color: var(--icon); }
+  .nav { border-bottom: 0; padding: 4px 10px; }
+  .nav__row { border-radius: 8px; padding: 6px 10px; }
+  .nav__more { color: var(--icon); }
+  .grid {
+    border-top: 1px solid color-mix(in srgb, var(--icon) 35%, transparent);
+    margin: 6px 14px 0; padding: 10px 0 14px;
+  }
+  .cell { border-radius: var(--radius); background: var(--card-bg); }
+  .cell:hover, .cell--playing { outline: 2px solid var(--icon); outline-offset: -2px; }
+
+  /* The player: the app's viewer */
+  .main { background: var(--viewer-bg); }
+  .who { padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg); }
+  .title { color: var(--text); font-weight: 600; font-size: 14px; }
+  .stage { background: var(--viewer-bg); }
+  .controls { background: var(--controls-bg); border-top: 1px solid var(--border); padding: 10px 12px; }
+  .controls button.icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; background: transparent; color: var(--icon); border-radius: 7px;
+  }
+  .controls button.icon:hover:not(:disabled) { background: var(--list-hover); }
+  .controls button.icon[aria-pressed=true] { background: var(--list-active); color: var(--icon); }
+  .controls input[type=range] { accent-color: var(--accent); }
+
+  /* Up next: a card down the right of the video, as in the app */
+  .card {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: color-mix(in srgb, var(--bg-raised) 92%, transparent); backdrop-filter: blur(8px);
+  }
+  .queue.card {
+    position: absolute; top: 16px; right: 16px; z-index: 4; width: 260px;
+    max-height: calc(100% - 32px); overflow-y: auto; padding: 10px 12px; border-top: 1px solid var(--border);
+  }
+  .queue h3 {
+    padding: 0 0 8px; margin-bottom: 8px; text-transform: none; letter-spacing: 0; font-size: 11px;
+    font-weight: 700; color: var(--icon); border-bottom: 1px solid color-mix(in srgb, var(--icon) 70%, transparent);
+  }
+  .qrow { padding: 3px 0; }
+  .qrow button { border-radius: 5px; padding: 2px 6px; }
+  .qrow button:hover { background: var(--list-hover); color: var(--text); }
+
+  /* Chat: the app's bar along the bottom, its log opening above it */
+  .lost {
+    flex: none; padding: 7px 16px; font-size: 12.5px; text-align: center;
+    background: color-mix(in srgb, var(--danger) 16%, var(--bg)); color: var(--text);
+    border-bottom: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  }
+  .chatbar { position: relative; flex: none; border-top: 1px solid var(--border); background: var(--bg-raised); }
+  .chatbar .msgs { display: none; max-height: 32vh; border-bottom: 1px solid var(--border); padding: 10px 16px; }
+  .chatbar.open .msgs { display: flex; }
+  .chatbar__row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+  .chatbar__toggle {
+    flex: none; width: 32px; height: 32px; border: 0; border-radius: 8px;
+    background: var(--bg-hover); color: var(--text); font-size: 15px;
+  }
+  .chatbar.open .chatbar__toggle { background: var(--list-active); }
+  .chatbar__latest {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: var(--text-muted); font-size: 12.5px;
+  }
+  .chatbar.open .chatbar__latest { visibility: hidden; }
+  .chatbar .say { border-top: 0; padding: 0; flex: 0 1 280px; }
+  .chatbar .say input { background: var(--bg-sunken); border-color: var(--input-border); padding: 6px 10px; }
+  .chatbar .reacts { border-top: 0; padding: 0; flex-wrap: nowrap; }
+  .chatbar .reacts button { background: transparent; }
+  .chatbar .reacts button:hover { background: var(--list-hover); }
+  .chatbar:not(.buzz-open) .buzz { display: none; }
+  .buzz.card { position: absolute; right: 12px; bottom: calc(100% + 8px); z-index: 6; width: 280px; border-top: 1px solid var(--border); }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .chatbar .reacts { display: none; }
+    .chatbar .say { flex: 1; }
+    .queue.card { width: auto; left: 16px; max-height: 40%; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Library -->
+  <section class="col browse" id="browse">
+    <div class="brand">
+      <span class="brand__name">GoonLib</span>
+      <span class="brand__sub">Watching together</span>
+    </div>
+    <div class="bar">
+      <input type="search" id="q" placeholder="Search the library">
+      <button class="chip burger" id="closeBrowse">Done</button>
+    </div>
+
+    <div class="bar">
+      <button class="chip" data-kind="all" aria-pressed="true">All</button>
+      <button class="chip" data-kind="video" aria-pressed="false">Video</button>
+      <button class="chip" data-kind="image" aria-pressed="false">Images</button>
+      <span class="kinds-spacer"></span>
+      <button class="chip shuffle" id="shuffleLib" aria-pressed="false" title="Shuffle the library"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3.5h2.4c.9 0 1.7.45 2.2 1.2l3.8 6.1c.5.75 1.3 1.2 2.2 1.2H15M1 12.5h2.4c.9 0 1.7-.45 2.2-1.2l.9-1.45M15 3.5h-2.3c-.9 0-1.7.45-2.2 1.2l-.9 1.45"/><path d="M12.8 1.6 15 3.5l-2.2 1.9M12.8 10.1l2.2 1.9-2.2 1.9"/></svg></button>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="folders" aria-selected="true">Folders</button>
+      <button class="tab" role="tab" data-tab="collections" aria-selected="false">Collections</button>
+      <button class="tab" role="tab" data-tab="tags" aria-selected="false">Tags</button>
+      <button class="tab" role="tab" data-tab="favorites" aria-selected="false">Favorites</button>
+    </div>
+
+    <div class="crumbs" id="crumbs"></div>
+    <div class="nav" id="nav"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <!-- Player, with the chat along its bottom as in the app -->
+  <section class="col main">
+    <div class="who">
+      <button class="chip burger" id="openBrowse">Library</button>
+      <span class="title" id="title"></span>
+      <span id="pips" style="display:flex;gap:10px;flex-wrap:wrap"></span>
+      <span class="control" id="control"></span>
+      <button class="chip burger" id="openSide">Chat</button>
+    </div>
+    <div class="lost" id="lost" role="status" aria-live="polite" hidden>
+      Lost the connection to the host - trying again…
+    </div>
+    <div class="note" id="note" hidden></div>
+    <div class="asking" id="asking" hidden></div>
+
+    <div class="stage" id="stage">
+      <div class="empty" id="empty">Nothing playing yet. Pick something from the library.</div>
+      <!-- preload=auto: the default fetches metadata and stops, and a paused
+           video with no data buffered can never tell the room it is ready. -->
+      <video id="video" playsinline preload="auto" hidden></video>
+      <img id="photo" hidden alt="">
+      <button class="sound" id="sound" hidden>Tap for sound</button>
+<aside class="queue card" id="queueWrap" hidden>
+        <h3>Up next</h3>
+        <div id="queue"></div>
+      <div class="veil" id="veil" hidden>
+        <div>
+          <h2 id="veilTitle">Ready when you are</h2>
+          <p id="veilBody">Your browser needs one tap before it will play.</p>
+          <button id="veilGo">Start watching</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="icon" id="play" aria-label="Play or pause">&#9654;</button>
+      <span class="time" id="now">0:00</span>
+      <input type="range" id="scrub" min="0" max="0" step="0.1" value="0" aria-label="Seek">
+      <span class="time" id="dur">0:00</span>
+      <button class="icon" id="autoplayNext" aria-pressed="false" aria-label="Autoplay"
+              title="Autoplay: move on by itself when a video ends, or after 8s on an image"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3.2v9.6l6.4-4.8Z" fill="currentColor"/><path d="M12.5 3.5v9"/></svg></button>
+      <button class="icon" id="shuffleNext" aria-pressed="false" aria-label="Shuffle"
+              title="Shuffle: autoplay picks at random rather than in order"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3.5h2.4c.9 0 1.7.45 2.2 1.2l3.8 6.1c.5.75 1.3 1.2 2.2 1.2H15M1 12.5h2.4c.9 0 1.7-.45 2.2-1.2l.9-1.45M15 3.5h-2.3c-.9 0-1.7.45-2.2 1.2l-.9 1.45"/><path d="M12.8 1.6 15 3.5l-2.2 1.9M12.8 10.1l2.2 1.9-2.2 1.9"/></svg></button>
+      <button class="icon" id="mute" aria-label="Mute">&#128266;</button>
+      <button class="icon" id="full" aria-label="Fullscreen">&#9974;</button>
+    </div>
+    <!-- The chat bar: the log opens above it, as in the app. -->
+    <section class="chatbar" id="side">
+      <div class="msgs" id="msgs"></div>
+    <div class="buzz card" id="buzz" hidden>
+      <strong style="color:var(--text)">Buzz the host</strong>
+      <div class="patterns" id="buzzPatterns" role="group" aria-label="Pattern"></div>
+      <label class="row">Strength
+        <input type="range" id="buzzStrength" min="5" max="100" step="5" value="50">
+        <output id="buzzStrengthOut">50%</output>
+      </label>
+      <label class="row">Length
+        <input type="range" id="buzzSeconds" min="1" max="10" step="1" value="3">
+        <output id="buzzSecondsOut">3s</output>
+      </label>
+      <button class="go" type="button" id="buzzGo">Send</button>
+      <div class="said" id="buzzSaid" aria-live="polite"></div>
+    </div>
+      <div class="chatbar__row">
+        <button class="chatbar__toggle" id="chatToggle" aria-expanded="false" title="Show the chat">&#128172;</button>
+        <span class="chatbar__latest" id="latest"></span>
+        <form class="say" id="sayForm">
+          <input id="sayText" maxlength="500" placeholder="Say something" autocomplete="off">
+        </form>
+        <div class="reacts" id="reacts"></div>
+        <button class="chip" id="buzzToggle" hidden>Buzz</button>
+        <button class="chip burger" id="closeSide" hidden>Done</button>
+      </div>
+    </section>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // Mirrors src/shared/drift.ts. Kept in step by hand: these three numbers are
+  // the whole feel of the feature, and a client that disagrees with the room
+  // about them fights it instead of following it.
+  var IGNORE_MS = 250;
+  var SEEK_MS = 2000;
+  var NUDGE = 0.05;
+
+  // Mirrors COWATCH_REACTIONS in src/shared/types.ts.
+  var EMOJI = {
+    heart: '❤️', fire: '🔥', lol: '😂', wow: '😮',
+    eyes: '👀', cheer: '🙌', love: '😍', splash: '💦'
+  };
+
+
+  var $ = function (id) { return document.getElementById(id); };
+  var video = $('video'), photo = $('photo'), stage = $('stage');
+
+  var state = null;       // latest room snapshot
+  var offset = 0;         // host clock minus ours
+  var items = new Map();  // mediaId -> item, for titles and thumbnails
+  var current = null;     // mediaId currently loaded into the player
+  var wantSound = true;   // the user has not asked for silence
+  var lastSeen = 0;       // chat messages already rendered
+  var sentReady = null;   // last readiness posted, as 'mediaId:bool'
+  var blocked = false;    // the browser refused to play; wait for a gesture
+  var endedFor = null;    // mediaId whose end has already been reported
+  var lastTime = -1;      // playhead at the previous check, to spot a stall
+  var videoFor = null;    // mediaId the <video> element currently has loaded
+
+  // --- talking to the host -------------------------------------------------
+
+  function post(path, body) {
+    return fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {})
+    }).catch(function () { /* the event stream will resync us */ });
+  }
+
+  function getJson(path) {
+    return fetch(path).then(function (r) { return r.json(); });
+  }
+
+  /**
+   * Reports whether this side can play, skipping repeats.
+   *
+   * Worth the bookkeeping: `playing` and `waiting` fire repeatedly around the
+   * end of a file, and posting each one turned a finished video into a steady
+   * stream of requests to the host.
+   */
+  function reportReady(mediaId, ready) {
+    var key = mediaId + ':' + ready;
+    // The room forgets everyone's readiness when an item is opened, so a
+    // "ready" it is still holding for has to be said again.
+    var heldForUs = state && state.playback.waiting &&
+      state.playback.waitingFor.indexOf('You') !== -1;
+    if (sentReady === key && !(ready && heldForUs)) return;
+    sentReady = key;
+    post('/api/ready', { mediaId: mediaId, ready: ready });
+  }
+
+  /**
+   * The item for an id, asking the host when this page has never seen it.
+   *
+   * The grid only knows what has been scrolled past here, and the room can be on
+   * anything — the host opens things from their own library, and someone
+   * joining late has seen nothing at all. Guessing "video" for an unknown id is
+   * how an image ended up fed to the video player and refused.
+   */
+  function ensureItem(mediaId) {
+    var known = items.get(mediaId);
+    if (known) return Promise.resolve(known);
+    return getJson('/api/item?id=' + mediaId).then(function (item) {
+      if (item && item.id === mediaId) items.set(mediaId, item);
+      return items.get(mediaId) || null;
+    }).catch(function () { return null; });
+  }
+
+  function inControl() { return !!(state && state.control && state.control.inControl); }
+
+  /** Draws the eye to the control strip after something was refused. */
+  function nudge() {
+    var box = $('control');
+    box.classList.remove('nudge');
+    void box.offsetWidth;   // restart the animation
+    box.classList.add('nudge');
+  }
+
+  function intent(kind, extra) {
+    var body = { kind: kind };
+    if (extra) for (var k in extra) body[k] = extra[k];
+    return post('/api/intent', body);
+  }
+
+  // --- clock ---------------------------------------------------------------
+
+  function syncClock() {
+    var sent = Date.now();
+    getJson('/api/time?t=' + sent).then(function (b) {
+      var back = Date.now();
+      // Assume the host read its clock at the midpoint of the round trip.
+      offset = b.host - (sent + (back - sent) / 2);
+    }).catch(function () {});
+  }
+
+  function hostNow() { return Date.now() + offset; }
+
+  // --- the event stream ----------------------------------------------------
+
+  var seenReactions = {};   // reaction ids already shown, however they arrived
+  var seenCount = 0;
+  var polling = null;       // interval id while falling back to polling
+  var streamed = false;     // the event stream has delivered at least once
+
+  function applyState(next) {
+    state = next;
+    // Reactions ride along in the snapshot for a few seconds so a polling
+    // client sees them too. Dedupe by id, since a pushed reaction and a polled
+    // one are the same event arriving twice.
+    (state.reactions || []).forEach(function (reaction) {
+      if (markSeen(reaction.id)) flash(reaction);
+    });
+    render();
+  }
+
+  /**
+   * True the first time an id is seen.
+   *
+   * The same reaction arrives twice whenever both transports are alive, since
+   * it is pushed and also rides along in the next snapshot. The table is reset
+   * rather than pruned precisely: ids only need to outlive the few seconds a
+   * reaction stays in the snapshot.
+   */
+  function markSeen(id) {
+    if (seenReactions[id]) return false;
+    if (seenCount > 500) { seenReactions = {}; seenCount = 0; }
+    seenReactions[id] = true;
+    seenCount++;
+    return true;
+  }
+
+  function evicted() {
+    document.body.innerHTML =
+      '<div style="display:grid;place-items:center;height:100vh;text-align:center">' +
+      '<div><h1>The session ended</h1><p style="color:var(--text-muted)">You have been removed.</p></div></div>';
+  }
+
+  /**
+   * Polls for state.
+   *
+   * The fallback for when something between here and the host will not pass a
+   * stream through. Cloudflare's quick tunnels buffer small chunks, so the
+   * opening event never arrives and the session looks dead. Polling is worse --
+   * a second of latency on every pause -- but a slightly late pause beats a
+   * session that never starts.
+   */
+  function startPolling() {
+    if (polling) return;
+    polling = setInterval(function () {
+      fetch('/api/state').then(function (r) {
+        if (r.status === 403) { clearInterval(polling); evicted(); return; }
+        return r.json().then(function (payload) { applyState(payload.room); });
+      }).catch(function () {});
+    }, 1000);
+  }
+
+  function stopPolling() {
+    if (!polling) return;
+    clearInterval(polling);
+    polling = null;
+  }
+
+  function connect() {
+    var source = new EventSource('/api/events');
+
+    source.addEventListener('state', function (e) {
+      streamed = true;
+      stopPolling();
+      applyState(JSON.parse(e.data).room);
+    });
+
+    source.addEventListener('reaction', function (e) {
+      var reaction = JSON.parse(e.data);
+      if (markSeen(reaction.id)) flash(reaction);
+    });
+
+    source.addEventListener('evicted', function () { source.close(); evicted(); });
+
+    // EventSource reconnects on its own, but a stream that connects and then
+    // delivers nothing never errors -- so the timer below is what actually
+    // catches a buffering proxy.
+    source.onerror = function () { startPolling(); };
+
+    // Poll from the outset rather than waiting to find out the stream is dead:
+    // a buffering proxy never errors, it just stays silent, and the cost of
+    // being wrong is one wasted request against a blank screen.
+    startPolling();
+    startChecking();
+  }
+
+  /**
+   * Asks the host every five seconds whether it is still there.
+   *
+   * Neither transport notices on its own when the line goes quiet: a stream
+   * that has stopped delivering never errors, and failed polls are swallowed.
+   * A check that gets no answer within four seconds shows a banner; the next
+   * one that does takes it down and brings the room up to date, so recovery
+   * needs nothing from the guest.
+   */
+  var checking = null;
+  var lost = false;
+
+  function startChecking() {
+    if (checking) return;
+    checking = setInterval(check, 5000);
+  }
+
+  function check() {
+    var abort = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = setTimeout(function () { if (abort) abort.abort(); }, 4000);
+    fetch('/api/state', { cache: 'no-store', signal: abort ? abort.signal : undefined })
+      .then(function (r) {
+        clearTimeout(timer);
+        if (r.status === 403) { clearInterval(checking); evicted(); return; }
+        if (!r.ok) throw new Error('status ' + r.status);
+        return r.json().then(function (payload) {
+          setLost(false);
+          applyState(payload.room);
+        });
+      })
+      .catch(function () {
+        clearTimeout(timer);
+        setLost(true);
+      });
+  }
+
+  function setLost(next) {
+    if (lost === next) return;
+    lost = next;
+    $('lost').hidden = !lost;
+  }
+
+  // --- rendering -----------------------------------------------------------
+
+  function render() {
+    if (!state) return;
+    renderWho();
+    renderControl();
+    renderChat();
+    renderQueue();
+    renderBuzz();
+    syncPlayer();
+    syncPlayIcon();
+  }
+
+  /** Play shows a pause sign while the room is playing, and a play sign otherwise. */
+  function syncPlayIcon() {
+    var playing = !!state && state.playback.mediaId !== null && isRunning(state.playback);
+    $('play').innerHTML = playing ? '&#10074;&#10074;' : '&#9654;';
+    $('play').setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  }
+
+  // --- buzzing the host's toy ---------------------------------------------
+
+  var buzzPattern = 'pulse';
+  var buzzSaidTimer = null;
+
+  /**
+   * Shows the controls only while the host is offering the toy, with sliders
+   * that stop at the host's own limits. The host enforces those limits anyway;
+   * this just keeps the page from offering what it will not get.
+   */
+  function renderBuzz() {
+    var offer = state.toy;
+    $('buzz').hidden = !offer;
+    $('buzzToggle').hidden = !offer;
+    if (!offer) { $('side').classList.remove('buzz-open'); return; }
+
+    renderBuzzPatterns(offer.patterns || []);
+
+    var strength = $('buzzStrength');
+    var maxStrength = Math.max(5, Math.round(offer.maxIntensity * 100));
+    strength.max = String(maxStrength);
+    if (Number(strength.value) > maxStrength) strength.value = String(maxStrength);
+
+    var seconds = $('buzzSeconds');
+    seconds.max = String(Math.max(1, Math.round(offer.maxSeconds)));
+    if (Number(seconds.value) > Number(seconds.max)) seconds.value = seconds.max;
+
+    showBuzzValues();
+  }
+
+  function showBuzzValues() {
+    $('buzzStrengthOut').textContent = $('buzzStrength').value + '%';
+    $('buzzSecondsOut').textContent = $('buzzSeconds').value + 's';
+  }
+
+  function saidBuzz(text) {
+    $('buzzSaid').textContent = text;
+    clearTimeout(buzzSaidTimer);
+    buzzSaidTimer = setTimeout(function () { $('buzzSaid').textContent = ''; }, 4000);
+  }
+
+  var shownPatterns = '';
+
+  /**
+   * One button per pattern the host offers — theirs included — rebuilt only
+   * when that list changes, so a pick survives every state push. The host
+   * checks each buzz against its own list; this is only what the buttons say.
+   */
+  function renderBuzzPatterns(patterns) {
+    var key = JSON.stringify(patterns);
+    if (key === shownPatterns) return;
+    shownPatterns = key;
+
+    var ids = patterns.map(function (p) { return p.id; });
+    if (ids.indexOf(buzzPattern) === -1) buzzPattern = ids[0] || 'pulse';
+
+    var box = $('buzzPatterns');
+    box.textContent = '';
+    patterns.forEach(function (pattern) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.textContent = pattern.label;
+      b.setAttribute('aria-pressed', String(pattern.id === buzzPattern));
+      b.addEventListener('click', function () {
+        buzzPattern = pattern.id;
+        Array.prototype.forEach.call(box.children, function (other) {
+          other.setAttribute('aria-pressed', String(other === b));
+        });
+      });
+      box.appendChild(b);
+    });
+  }
+
+  $('buzzStrength').addEventListener('input', showBuzzValues);
+  $('buzzSeconds').addEventListener('input', showBuzzValues);
+
+  $('buzzGo').addEventListener('click', function () {
+    var go = $('buzzGo');
+    go.disabled = true;
+    fetch('/api/buzz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pattern: buzzPattern,
+        intensity: Number($('buzzStrength').value) / 100,
+        seconds: Number($('buzzSeconds').value)
+      })
+    }).then(function (r) { return r.json(); }).then(function (b) {
+      var said = {
+        ok: 'Sent.',
+        cooling: 'Give it a moment before sending another.',
+        full: 'Plenty queued already - try again shortly.',
+        off: 'The host is not taking buzzes right now.'
+      }[b.outcome];
+      saidBuzz(said || 'That did not go through.');
+    }).catch(function () {
+      saidBuzz('That did not go through.');
+    }).then(function () {
+      // A short hold, so a double-tap on a phone is one buzz and not two.
+      setTimeout(function () { go.disabled = false; }, 600);
+    });
+  });
+
+  function renderWho() {
+    var pips = $('pips');
+    pips.textContent = '';
+
+    state.guests.forEach(function (g) {
+      var el = document.createElement('span');
+      el.className = 'pip';
+      var dot = document.createElement('span');
+      dot.className = 'dot' + (!g.connected ? ' off' : (!g.ready ? ' busy' : ''));
+      el.appendChild(dot);
+      el.appendChild(document.createTextNode(g.name));
+      pips.appendChild(el);
+    });
+
+    var note = $('note');
+    if (state.playback.waiting && state.playback.waitingFor.length) {
+      note.textContent = 'Holding for ' + state.playback.waitingFor.join(', ') + '…';
+      note.hidden = false;
+    } else {
+      note.hidden = true;
+    }
+
+    var item = state.playback.mediaId !== null ? items.get(state.playback.mediaId) : null;
+    $('title').textContent = item ? item.name : '';
+  }
+
+  function renderControl() {
+    var control = state.control;
+    var box = $('control'), asking = $('asking');
+    box.textContent = '';
+    asking.textContent = '';
+
+    function button(label, primary, onClick) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      if (primary) b.className = 'go';
+      b.addEventListener('click', onClick);
+      return b;
+    }
+
+    function text(parent, before, bold, after) {
+      var span = document.createElement('span');
+      if (before) span.appendChild(document.createTextNode(before));
+      if (bold) { var b = document.createElement('b'); b.textContent = bold; span.appendChild(b); }
+      if (after) span.appendChild(document.createTextNode(after));
+      parent.appendChild(span);
+    }
+
+    if (control.inControl) {
+      text(box, "You're in control");
+    } else if (control.requested) {
+      text(box, 'Asked ', control.controller, '…');
+      box.appendChild(button('Cancel', false, function () {
+        post('/api/control', { action: 'cancel' });
+      }));
+    } else {
+      text(box, '', control.controller, ' is in control');
+      box.appendChild(button('Ask for control', true, function () {
+        post('/api/control', { action: 'request' });
+      }));
+    }
+
+    // Only the controller is ever sent requests, and only they can answer.
+    var request = control.requests[0];
+    asking.hidden = !request;
+    if (request) {
+      text(asking, '', request.name, ' wants control');
+      asking.appendChild(button('Hand over', true, function () {
+        post('/api/control', { action: 'answer', peer: request.id, allow: true });
+      }));
+      asking.appendChild(button('Keep', false, function () {
+        post('/api/control', { action: 'answer', peer: request.id, allow: false });
+      }));
+    }
+
+    $('play').disabled = !control.inControl;
+    $('scrub').disabled = !control.inControl;
+  }
+
+  function renderChat() {
+    var box = $('msgs');
+    // Append only what is new, so the list does not flicker on every heartbeat.
+    for (var i = lastSeen; i < state.chat.length; i++) {
+      var m = state.chat[i];
+      var el = document.createElement('div');
+      el.className = 'msg';
+      var who = document.createElement('b');
+      who.textContent = m.from + ': ';
+      el.appendChild(who);
+      // textContent, never innerHTML: this string was typed by someone else.
+      el.appendChild(document.createTextNode(m.text));
+      box.appendChild(el);
+    }
+    if (state.chat.length !== lastSeen) {
+      lastSeen = state.chat.length;
+      box.scrollTop = box.scrollHeight;
+    }
+    // Collapsed, the bar still shows the last thing said.
+    var last = state.chat[state.chat.length - 1];
+    $('latest').textContent = last ? last.from + ': ' + last.text : 'Nothing said yet.';
+  }
+
+  function renderQueue() {
+    var wrap = $('queueWrap'), box = $('queue');
+    wrap.hidden = state.queue.length === 0;
+    box.textContent = '';
+
+    state.queue.forEach(function (id, index) {
+      var item = items.get(id);
+      var row = document.createElement('div');
+      row.className = 'qrow';
+
+      var thumb = document.createElement('img');
+      thumb.src = '/thumb/' + id;
+      thumb.alt = '';
+      thumb.loading = 'lazy';
+      row.appendChild(thumb);
+
+      var label = document.createElement('span');
+      label.textContent = item ? item.name : 'Item ' + id;
+      row.appendChild(label);
+
+      var play = document.createElement('button');
+      play.textContent = 'Play';
+      play.addEventListener('click', function () {
+        if (!inControl()) { nudge(); return; }
+        intent('open', { mediaId: id });
+      });
+      row.appendChild(play);
+
+      var drop = document.createElement('button');
+      drop.textContent = '×';
+      drop.setAttribute('aria-label', 'Remove from queue');
+      drop.addEventListener('click', function () {
+        var next = state.queue.slice();
+        next.splice(index, 1);
+        post('/api/queue', { mediaIds: next });
+      });
+      row.appendChild(drop);
+
+      box.appendChild(row);
+    });
+  }
+
+  /** Floats one reaction over the video. Safe to call from either transport. */
+  function flash(reaction) {
+    var el = document.createElement('div');
+    el.className = 'float';
+    el.textContent = EMOJI[reaction.emoji] || '✨';
+    // Scatter them so several at once do not stack into one glyph.
+    el.style.left = (35 + Math.random() * 30) + '%';
+    stage.appendChild(el);
+    setTimeout(function () { el.remove(); }, 2300);
+  }
+
+  // --- the player ----------------------------------------------------------
+
+  function isRunning(pb) { return !pb.paused && !pb.waiting; }
+
+  /**
+   * Starts playback, coping with the browser refusing to.
+   *
+   * Autoplay rules mean play() can be rejected long after the click that led
+   * here, so this never assumes permission. If sound is what was refused it
+   * falls back to playing muted -- the picture stays in step, which is most of
+   * the point -- and offers a single tap to turn the sound on. Only if even
+   * muted playback is refused does it put a wall up.
+   */
+  function attemptPlay() {
+    // Once the browser has refused, only a real gesture will change its mind —
+    // retrying twice a second until then is a busy loop with a wall on screen.
+    if (video.hidden || blocked) return;
+
+    video.muted = !wantSound;
+    video.play().then(function () {
+      blocked = false;
+      hideVeil();
+      $('sound').hidden = wantSound;
+    }).catch(function () {
+      video.muted = true;
+      video.play().then(function () {
+        blocked = false;
+        hideVeil();
+        // Picture is in step; sound is one tap away.
+        $('sound').hidden = false;
+      }).catch(function () {
+        blocked = true;
+        showVeil('Tap to start', 'Your browser will not play this on its own.');
+      });
+    });
+  }
+
+  function syncPlayer() {
+    var pb = state.playback;
+
+    if (pb.mediaId === null) {
+      // Runs twice a second, so only tear down what is actually up.
+      if (videoFor !== null) unloadVideo();
+      current = null;
+      video.hidden = photo.hidden = true;
+      $('empty').hidden = false;
+      hideVeil();
+      $('sound').hidden = true;
+      markPlaying();
+      return;
+    }
+
+    $('empty').hidden = true;
+
+    if (pb.mediaId !== current) {
+      current = pb.mediaId;
+      load(pb.mediaId);
+      markPlaying();
+      return;
+    }
+
+    if (video.hidden || videoFor !== current) return;
+
+    // Read readiness off the element rather than from its events: a paused
+    // video that has buffered plenty fires nothing more, and the room would
+    // go on holding for it.
+    reportReady(current, video.readyState >= 3);
+
+    // Where the room says we should be, right now.
+    var target = pb.positionMs + (isRunning(pb) ? Math.max(0, hostNow() - pb.updatedAt) : 0);
+    var drift = target - video.currentTime * 1000;
+
+    if (Math.abs(drift) > SEEK_MS) {
+      video.currentTime = target / 1000;
+      video.playbackRate = 1;
+    } else if (Math.abs(drift) > IGNORE_MS) {
+      // Play a touch fast or slow and let the gap close itself, rather than
+      // stuttering the picture with a seek.
+      video.playbackRate = drift > 0 ? 1 + NUDGE : 1 - NUDGE;
+    } else {
+      video.playbackRate = 1;
+    }
+
+    // Chromium does not always fire `ended`: a file whose container declares a
+    // duration a few frames longer than its last sample stalls on the final
+    // frame instead, un-paused and going nowhere. Only un-paused playback
+    // counts, so pausing on the last second is not mistaken for the end.
+    if (!video.paused && isFinite(video.duration) && video.duration > 0) {
+      var stuck = video.currentTime === lastTime;
+      lastTime = video.currentTime;
+      if (stuck && video.duration - video.currentTime <= 0.5) finishVideo();
+    } else {
+      lastTime = -1;
+    }
+
+    if (isRunning(pb) && video.paused) attemptPlay();
+    else if (!isRunning(pb) && !video.paused) video.pause();
+  }
+
+  /**
+   * Stops the video element and lets go of its stream.
+   *
+   * Hiding it was not enough: a hidden video kept playing its sound, kept
+   * downloading, and when the host abandoned that file its stream failed and the
+   * error was drawn over whatever was on screen by then — usually an image.
+   */
+  function unloadVideo() {
+    videoFor = null;
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+  }
+
+  function load(mediaId) {
+    blocked = false;
+    endedFor = null;
+    lastTime = -1;
+    video.hidden = true;
+    photo.hidden = true;
+    photo.removeAttribute('src');
+    $('sound').hidden = true;
+    hideVeil();
+    unloadVideo();
+
+    ensureItem(mediaId).then(function (item) {
+      if (current !== mediaId) return;   // the room moved on while we asked
+      renderWho();
+      show(mediaId, item);
+    });
+  }
+
+  function show(mediaId, item) {
+    if (item && item.kind === 'image') {
+      photo.src = '/stream/' + mediaId;
+      photo.hidden = false;
+      reportReady(mediaId, true);
+      timeImage();
+      return;
+    }
+
+    // Tell the room we cannot play yet, so it holds rather than running ahead
+    // while this side is still being remuxed or transcoded.
+    reportReady(mediaId, false);
+    showVeil('Getting it ready', 'Their machine is preparing this one.');
+
+    post('/api/prepare', { mediaId: mediaId }).then(function () {
+      if (current !== mediaId) return;   // the room moved on while we waited
+      videoFor = mediaId;
+      video.src = '/stream/' + mediaId;
+      video.hidden = false;
+      video.load();
+    });
+  }
+
+  video.addEventListener('canplaythrough', function () {
+    if (current === null || videoFor !== current) return;
+    reportReady(current, true);
+    hideVeil();
+    if (state && isRunning(state.playback)) attemptPlay();
+  });
+
+  video.addEventListener('timeupdate', function () {
+    $('now').textContent = clock(video.currentTime);
+    if (!scrubbing) $('scrub').value = String(video.currentTime);
+  });
+
+  video.addEventListener('durationchange', function () {
+    var d = isFinite(video.duration) ? video.duration : 0;
+    $('scrub').max = String(d);
+    $('dur').textContent = clock(d);
+  });
+
+  video.addEventListener('waiting', function () {
+    if (current !== null && videoFor === current) reportReady(current, false);
+  });
+
+  video.addEventListener('playing', function () {
+    if (current !== null && videoFor === current) reportReady(current, true);
+  });
+
+  /**
+   * Reports the end of the video, once per playthrough.
+   *
+   * Without this the room goes on projecting the playhead past the end of the
+   * file forever, and every client sits there being told to play something that
+   * has already finished.
+   */
+  function finishVideo() {
+    if (endedFor === current) return;
+    endedFor = current;
+    if (state && isRunning(state.playback) && inControl()) {
+      if (autoplayNext) { playNext(); return; }
+      intent('pause', { positionMs: Math.round((video.duration || 0) * 1000) });
+    }
+  }
+
+  // Autoplay, as in the app: moving on by itself, when a video ends or after a
+  // while on an image. Shuffle decides where it moves to. Only whoever is in
+  // control moves the room along. Remembered on this device.
+  var autoplayNext = false;
+  try { autoplayNext = localStorage.getItem('goonlib.autoplay') === '1'; } catch (e) {}
+  var IMAGE_SECONDS = 8;
+  var imageTimer = null;
+
+  function syncAutoplay() {
+    $('autoplayNext').setAttribute('aria-pressed', autoplayNext ? 'true' : 'false');
+  }
+
+  /** Starts, or stops, the countdown on an image the room is showing. */
+  function timeImage() {
+    clearTimeout(imageTimer);
+    imageTimer = null;
+    var item = current !== null ? items.get(current) : null;
+    if (!autoplayNext || !item || item.kind !== 'image' || !inControl()) return;
+    var shown = current;
+    imageTimer = setTimeout(function () {
+      if (current === shown && autoplayNext && inControl()) playNext();
+    }, IMAGE_SECONDS * 1000);
+  }
+
+  /**
+   * What autoplay moves to: the first thing in Up next, taken off it as it
+   * plays; otherwise, with Shuffle on, anything at random from the library
+   * pane; otherwise the item after this one there.
+   */
+  function playNext() {
+    if (state && state.queue.length) {
+      var head = state.queue[0];
+      post('/api/queue', { mediaIds: state.queue.slice(1) });
+      intent('open', { mediaId: head });
+      return;
+    }
+    if (shuffleNext) { playRandom(); return; }
+    getJson(scopeQuery().replace('/api/library?', '/api/ids?')).then(function (ids) {
+      var at = ids.indexOf(current);
+      var next = at >= 0 ? ids[at + 1] : ids[0];
+      if (next !== undefined && next !== current) intent('open', { mediaId: next });
+    }).catch(function () {});
+  }
+
+  // Shuffle for what plays next, remembered on this device like the host's.
+  var shuffleNext = false;
+  try { shuffleNext = localStorage.getItem('goonlib.shuffleNext') === '1'; } catch (e) {}
+
+  function syncShuffleNext() {
+    $('shuffleNext').setAttribute('aria-pressed', shuffleNext ? 'true' : 'false');
+  }
+
+  /** Opens something at random from what the library pane is showing. */
+  function playRandom() {
+    getJson(scopeQuery().replace('/api/library?', '/api/ids?')).then(function (ids) {
+      var others = ids.filter(function (id) { return id !== current; });
+      if (!others.length) return;
+      intent('open', { mediaId: others[Math.floor(Math.random() * others.length)] });
+    }).catch(function () {});
+  }
+
+  video.addEventListener('ended', finishVideo);
+
+  video.addEventListener('error', function () {
+    // Only an error from what is actually meant to be on screen. Tearing a
+    // stream down on purpose reports itself as an error too.
+    if (videoFor === null || videoFor !== current || video.hidden) return;
+    showVeil('That would not play', 'Their machine could not hand this one over.');
+  });
+
+  function showVeil(title, body) {
+    $('veilTitle').textContent = title;
+    $('veilBody').textContent = body || '';
+    $('veil').hidden = false;
+  }
+
+  function hideVeil() { $('veil').hidden = true; }
+
+  // Both of these are real user gestures, which is what the browser wants.
+  $('veilGo').addEventListener('click', function () {
+    wantSound = true;
+    blocked = false;
+    attemptPlay();
+    syncClock();
+  });
+
+  $('sound').addEventListener('click', function () {
+    wantSound = true;
+    video.muted = false;
+    $('sound').hidden = true;
+    video.play().catch(function () { video.muted = true; $('sound').hidden = false; });
+  });
+
+  // --- controls ------------------------------------------------------------
+
+  var scrubbing = false;
+
+  $('play').addEventListener('click', function () {
+    if (!state || state.playback.mediaId === null) return;
+    if (!inControl()) { nudge(); return; }
+    if (isRunning(state.playback)) {
+      intent('pause', { positionMs: Math.round(video.currentTime * 1000) });
+    } else {
+      // Take the click as permission while we still have it, rather than
+      // waiting for the room to come back and finding the gesture expired.
+      blocked = false;
+      attemptPlay();
+      intent('play');
+    }
+  });
+
+  $('autoplayNext').addEventListener('click', function () {
+    autoplayNext = !autoplayNext;
+    try { localStorage.setItem('goonlib.autoplay', autoplayNext ? '1' : '0'); } catch (e) {}
+    syncAutoplay();
+    timeImage();
+  });
+  syncAutoplay();
+
+  $('shuffleNext').addEventListener('click', function () {
+    shuffleNext = !shuffleNext;
+    try { localStorage.setItem('goonlib.shuffleNext', shuffleNext ? '1' : '0'); } catch (e) {}
+    syncShuffleNext();
+  });
+  syncShuffleNext();
+
+  $('shuffleLib').addEventListener('click', function () {
+    // On, with a fresh order each time; clicked while on, back to newest first.
+    shuffleSeed = shuffleSeed === null ? Math.floor(Math.random() * 2147483647) + 1 : null;
+    $('shuffleLib').setAttribute('aria-pressed', shuffleSeed !== null ? 'true' : 'false');
+    resetGrid();
+  });
+
+  video.addEventListener('play', syncPlayIcon);
+  video.addEventListener('pause', syncPlayIcon);
+
+  $('scrub').addEventListener('pointerdown', function () { scrubbing = true; });
+  $('scrub').addEventListener('change', function (e) {
+    scrubbing = false;
+    if (!inControl()) { nudge(); return; }
+    intent('seek', { positionMs: Math.round(Number(e.target.value) * 1000) });
+  });
+
+  $('mute').addEventListener('click', function () {
+    wantSound = !wantSound;
+    video.muted = !wantSound;
+    $('mute').innerHTML = video.muted ? '&#128263;' : '&#128266;';
+    $('sound').hidden = true;
+  });
+
+  $('full').addEventListener('click', function () {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else stage.requestFullscreen().catch(function () {});
+  });
+
+  Object.keys(EMOJI).forEach(function (name) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = EMOJI[name];
+    b.setAttribute('aria-label', name);
+    b.addEventListener('click', function () { post('/api/react', { emoji: name }); });
+    $('reacts').appendChild(b);
+  });
+
+  $('sayForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = $('sayText');
+    if (!input.value.trim()) return;
+    post('/api/say', { text: input.value });
+    input.value = '';
+  });
+
+  // --- the library ---------------------------------------------------------
+
+  var kind = 'all', search = '';
+  var tab = 'folders';
+  // Where in the library we are. Mirrors the app's own sidebar: folder,
+  // collection and tag are alternative ways of narrowing the same library, and
+  // picking one clears the others.
+  var scope = { rootId: null, pathPrefix: '', collectionId: null, tagId: null };
+  var trail = [];   // [{ rootId, path, label }], deepest last
+  var roots = [];
+  var rows = 0, loading = false, exhausted = false;
+  // Set while the library is shuffled; each shuffle gets a new one, and the
+  // same one keeps later pages in the same order.
+  var shuffleSeed = null;
+
+  function scopeQuery() {
+    var parts = ['limit=60', 'offset=' + rows, 'kind=' + encodeURIComponent(kind)];
+    if (shuffleSeed !== null) parts.push('sort=shuffle', 'seed=' + shuffleSeed);
+    if (search) parts.push('search=' + encodeURIComponent(search));
+
+    if (tab === 'favorites') {
+      parts.push('favorite=1');
+    } else if (scope.collectionId !== null) {
+      parts.push('collectionId=' + scope.collectionId);
+    } else if (scope.tagId !== null) {
+      parts.push('tagId=' + scope.tagId);
+    } else {
+      if (scope.rootId !== null) parts.push('rootId=' + scope.rootId);
+      if (scope.pathPrefix) parts.push('pathPrefix=' + encodeURIComponent(scope.pathPrefix));
+      // Browsing shows a folder's own files, with its subfolders listed above
+      // as folders. Searching deliberately does not narrow this way -- looking
+      // for something means looking everywhere.
+      if (!search) parts.push('directOnly=1');
+    }
+
+    return '/api/library?' + parts.join('&');
+  }
+
+  function resetGrid() {
+    rows = 0;
+    exhausted = false;
+    $('grid').textContent = '';
+    loadMore();
+  }
+
+  /** An empty folder should say so rather than looking like a failed load. */
+  function showGridNote(text) {
+    var note = document.createElement('p');
+    note.className = 'nav__empty';
+    note.style.gridColumn = '1 / -1';
+    note.textContent = text;
+    $('grid').appendChild(note);
+  }
+
+  function loadMore() {
+    if (loading || exhausted) return;
+    loading = true;
+
+    getJson(scopeQuery()).then(function (page) {
+      loading = false;
+      if (!page.items.length) {
+        exhausted = true;
+        if (rows === 0) {
+          showGridNote(
+            search ? 'Nothing matches.'
+              : tab === 'favorites' ? 'No favorites yet.'
+              : 'No files here - try a folder.'
+          );
+        }
+        return;
+      }
+      rows += page.items.length;
+      if (rows >= page.total) exhausted = true;
+      page.items.forEach(addCell);
+    }).catch(function () {
+      // Left un-exhausted on purpose, so scrolling or switching folder tries
+      // again rather than leaving the grid permanently empty.
+      loading = false;
+    });
+  }
+
+  function addCell(item) {
+    items.set(item.id, item);
+
+    var cell = document.createElement('button');
+    cell.className = 'cell';
+    cell.title = item.name;
+    cell.dataset.id = String(item.id);
+    cell.addEventListener('click', function () {
+      // Only the controller changes what is playing; anyone else is shown where
+      // to ask. The item already playing is not a change, so it still works.
+      if (!inControl() && (!state || state.playback.mediaId !== item.id)) {
+        nudge();
+        return;
+      }
+      // Claim playback permission from this click, before the round trip.
+      wantSound = true;
+      intent('open', { mediaId: item.id });
+      if (narrow()) openSheet('none');
+    });
+
+    var img = document.createElement('img');
+    img.src = '/thumb/' + item.id;
+    img.alt = item.name;
+    img.loading = 'lazy';
+    cell.appendChild(img);
+
+    if (item.favoritedAt !== null) {
+      var fav = document.createElement('span');
+      fav.className = 'fav';
+      fav.textContent = '\u2665';
+      fav.title = 'Favorite';
+      cell.appendChild(fav);
+    }
+
+    if (item.durationMs) {
+      var dur = document.createElement('span');
+      dur.className = 'dur';
+      dur.textContent = clock(item.durationMs / 1000);
+      cell.appendChild(dur);
+    }
+
+    var plus = document.createElement('button');
+    plus.className = 'plus';
+    plus.textContent = '+';
+    plus.title = 'Add to the queue';
+    plus.addEventListener('click', function (e) {
+      e.stopPropagation();
+      post('/api/queue', { mediaIds: (state ? state.queue : []).concat([item.id]) });
+    });
+    cell.appendChild(plus);
+
+    $('grid').appendChild(cell);
+  }
+
+  /** Outlines whatever the room is on, so the grid says where you are. */
+  function markPlaying() {
+    var playing = state && state.playback.mediaId !== null ? String(state.playback.mediaId) : null;
+    Array.prototype.forEach.call($('grid').children, function (cell) {
+      cell.classList.toggle('cell--playing', cell.dataset.id === playing);
+    });
+  }
+
+  // --- navigation ----------------------------------------------------------
+
+  function renderCrumbs() {
+    var box = $('crumbs');
+    box.textContent = '';
+
+    if (tab !== 'folders') { box.hidden = true; return; }
+    box.hidden = false;
+
+    var steps = [{ label: 'Library', index: -1 }];
+    trail.forEach(function (step, i) { steps.push({ label: step.label, index: i }); });
+
+    steps.forEach(function (step, i) {
+      if (i > 0) {
+        var sep = document.createElement('span');
+        sep.className = 'sep';
+        sep.textContent = '/';
+        box.appendChild(sep);
+      }
+      var b = document.createElement('button');
+      b.className = 'crumb';
+      b.textContent = step.label;
+      b.addEventListener('click', function () { goToDepth(step.index); });
+      box.appendChild(b);
+    });
+  }
+
+  function goToDepth(index) {
+    trail = trail.slice(0, index + 1);
+    var last = trail[trail.length - 1];
+
+    scope.collectionId = null;
+    scope.tagId = null;
+    scope.rootId = last ? last.rootId : null;
+    scope.pathPrefix = last ? last.path : '';
+
+    renderNav();
+    renderCrumbs();
+    resetGrid();
+  }
+
+  function renderNav() {
+    var box = $('nav');
+    box.textContent = '';
+
+    if (tab === 'collections') {
+      getJson('/api/collections').then(function (list) {
+        fillNav(list.map(function (c) {
+          return {
+            label: c.name, count: c.count, more: false,
+            active: scope.collectionId === c.id,
+            go: function () {
+              scope = { rootId: null, pathPrefix: '', collectionId: c.id, tagId: null };
+              trail = [];
+              renderNav(); renderCrumbs(); resetGrid();
+            }
+          };
+        }), 'No collections.');
+      }).catch(navFailed);
+      return;
+    }
+
+    if (tab === 'favorites') {
+      // Nothing to pick between: the grid below is the whole view.
+      return;
+    }
+
+    if (tab === 'tags') {
+      getJson('/api/tags').then(function (list) {
+        fillNav(list.map(function (t) {
+          return {
+            label: t.name, count: t.count, more: false,
+            active: scope.tagId === t.id,
+            go: function () {
+              scope = { rootId: null, pathPrefix: '', collectionId: null, tagId: t.id };
+              trail = [];
+              renderNav(); renderCrumbs(); resetGrid();
+            }
+          };
+        }), 'No tags.');
+      }).catch(navFailed);
+      return;
+    }
+
+    // Folders. At the top level that means the library's source folders; below
+    // it, the subfolders of wherever we are.
+    if (trail.length === 0) {
+      fillNav(roots.map(function (root) {
+        return {
+          label: basename(root.path), count: null, more: true, active: false,
+          go: function () {
+            trail = [{ rootId: root.id, path: '', label: basename(root.path) }];
+            scope = { rootId: root.id, pathPrefix: '', collectionId: null, tagId: null };
+            renderNav(); renderCrumbs(); resetGrid();
+          }
+        };
+      }), 'No folders in the library.');
+      return;
+    }
+
+    var here = trail[trail.length - 1];
+    getJson('/api/folders?rootId=' + here.rootId + '&path=' + encodeURIComponent(here.path))
+      .then(function (list) {
+        fillNav(list.map(function (folder) {
+          return {
+            label: folder.name, count: folder.count, more: folder.hasChildren, active: false,
+            go: function () {
+              trail = trail.concat([
+                { rootId: here.rootId, path: folder.path, label: folder.name }
+              ]);
+              scope = {
+                rootId: here.rootId, pathPrefix: folder.path, collectionId: null, tagId: null
+              };
+              renderNav(); renderCrumbs(); resetGrid();
+            }
+          };
+        }), '');
+      })
+      .catch(navFailed);
+  }
+
+  /**
+   * Shown when the host could not be asked.
+   *
+   * Distinguishing "this folder is empty" from "the request failed" matters:
+   * the two look identical in a blank panel, and only one of them is worth
+   * retrying.
+   */
+  function navFailed() {
+    fillNav([], 'Could not reach the host. It will retry.');
+  }
+
+  function fillNav(entries, emptyText) {
+    var box = $('nav');
+    box.textContent = '';
+
+    if (!entries.length) {
+      if (!emptyText) return;
+      var empty = document.createElement('p');
+      empty.className = 'nav__empty';
+      empty.textContent = emptyText;
+      box.appendChild(empty);
+      return;
+    }
+
+    entries.forEach(function (entry) {
+      var row = document.createElement('button');
+      row.className = 'nav__row';
+      if (entry.active) row.setAttribute('aria-current', 'true');
+      row.addEventListener('click', entry.go);
+
+      var label = document.createElement('span');
+      label.textContent = entry.label;
+      row.appendChild(label);
+
+      if (entry.count !== null && entry.count !== undefined) {
+        var count = document.createElement('span');
+        count.className = 'nav__count';
+        count.textContent = String(entry.count);
+        row.appendChild(count);
+      }
+
+      if (entry.more) {
+        var chevron = document.createElement('span');
+        chevron.className = 'nav__more';
+        chevron.textContent = '›';
+        row.appendChild(chevron);
+      }
+
+      box.appendChild(row);
+    });
+  }
+
+  function basename(path) {
+    var parts = String(path).replace(/[\/\\]+$/, '').split(/[\/\\]/);
+    return parts[parts.length - 1] || path;
+  }
+
+  // --- wiring --------------------------------------------------------------
+
+  $('grid').addEventListener('scroll', function (e) {
+    var el = e.target;
+    if (el.scrollTop + el.clientHeight > el.scrollHeight - 400) loadMore();
+  });
+
+  var typing;
+  $('q').addEventListener('input', function (e) {
+    clearTimeout(typing);
+    var value = e.target.value;
+    typing = setTimeout(function () { search = value; resetGrid(); }, 220);
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-kind]'), function (b) {
+    b.addEventListener('click', function () {
+      kind = b.dataset.kind;
+      Array.prototype.forEach.call(document.querySelectorAll('[data-kind]'), function (o) {
+        o.setAttribute('aria-pressed', String(o === b));
+      });
+      resetGrid();
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) {
+    b.addEventListener('click', function () {
+      tab = b.dataset.tab;
+      Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (o) {
+        o.setAttribute('aria-selected', String(o === b));
+      });
+      // Switching how you browse drops the narrowing the old way applied.
+      trail = [];
+      scope = { rootId: null, pathPrefix: '', collectionId: null, tagId: null };
+      renderNav(); renderCrumbs(); resetGrid();
+    });
+  });
+
+  var mq = window.matchMedia('(max-width: 900px)');
+  function narrow() { return mq.matches; }
+
+  // Which panel is open as a sheet. Only meaningful on a narrow screen; on a
+  // wide one both panels are simply always there.
+  var sheet = 'none';
+
+  /**
+   * Applies panel visibility for the current width.
+   *
+   * Re-run whenever the breakpoint is crossed, not just at load. Hiding the
+   * panels once at startup meant a window that began narrow and was then
+   * widened kept them hidden forever -- with the buttons that reopen them also
+   * hidden, because those only exist on narrow screens.
+   */
+  function applyPanels() {
+    // The chat bar is always there; on a narrow screen the library is a sheet.
+    $('browse').hidden = narrow() && sheet !== 'browse';
+  }
+
+  function openSheet(which) { sheet = which; applyPanels(); }
+
+  $('openBrowse').addEventListener('click', function () { openSheet('browse'); });
+  $('closeBrowse').addEventListener('click', function () { openSheet('none'); });
+  function setChatOpen(open) {
+    $('side').classList.toggle('open', open);
+    $('chatToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) $('msgs').scrollTop = $('msgs').scrollHeight;
+  }
+  $('chatToggle').addEventListener('click', function () {
+    setChatOpen(!$('side').classList.contains('open'));
+  });
+  $('openSide').addEventListener('click', function () { setChatOpen(true); });
+  $('closeSide').addEventListener('click', function () { setChatOpen(false); });
+  $('buzzToggle').addEventListener('click', function () {
+    $('side').classList.toggle('buzz-open');
+  });
+
+  if (mq.addEventListener) mq.addEventListener('change', applyPanels);
+  else mq.addListener(applyPanels);
+
+  applyPanels();
+
+  function clock(seconds) {
+    if (!isFinite(seconds) || seconds < 0) seconds = 0;
+    var total = Math.floor(seconds);
+    var h = Math.floor(total / 3600);
+    var m = Math.floor((total % 3600) / 60);
+    var s = total % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(s).padStart(2, '0');
+  }
+
+  // --- go ------------------------------------------------------------------
+
+  syncClock();
+  setInterval(syncClock, 15000);
+  // Follow the room between messages too. Its position is a projection from a
+  // timestamp, so where we should be keeps moving when nothing is being sent —
+  // and a working event stream sends nothing while nothing changes.
+  setInterval(function () { if (state) syncPlayer(); }, 500);
+  connect();
+
+  getJson('/api/roots').then(function (payload) {
+    roots = payload.roots || [];
+    renderNav();
+    renderCrumbs();
+  }).catch(function () { renderNav(); renderCrumbs(); });
+
+  resetGrid();
+})();
+</script>
+</body>
+</html>
