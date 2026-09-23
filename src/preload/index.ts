@@ -22,8 +22,6 @@ import type {
   AiTestResult,
   AppInfo,
   Collection,
-  ContextMenuAction,
-  ContextMenuRequest,
   DuplicateReport,
   FolderNode,
   GoonLibApi,
@@ -32,6 +30,7 @@ import type {
   LibraryStats,
   MediaAnnotations,
   MediaExif,
+  MediaFileAction,
   MediaItem,
   MediaViews,
   MediaPage,
@@ -107,13 +106,8 @@ const api: GoonLibApi = {
     favorite: (mediaIds: number[], favorite: boolean): Promise<number> =>
       ipcRenderer.invoke(IPC.mediaFavorite, mediaIds, favorite),
     reveal: (mediaId: number): Promise<void> => ipcRenderer.invoke(IPC.revealInFinder, mediaId),
-    showContextMenu: (request: ContextMenuRequest): Promise<void> =>
-      ipcRenderer.invoke(IPC.mediaContextMenu, request),
-    onContextMenuAction: (listener: (action: ContextMenuAction) => void): (() => void) => {
-      const wrapped = (_event: unknown, action: ContextMenuAction): void => listener(action)
-      ipcRenderer.on(IPC.contextMenuAction, wrapped)
-      return () => ipcRenderer.removeListener(IPC.contextMenuAction, wrapped)
-    },
+    fileAction: (action: MediaFileAction, mediaId: number): Promise<boolean> =>
+      ipcRenderer.invoke(IPC.mediaFileAction, action, mediaId),
     annotations: (mediaId: number): Promise<MediaAnnotations> =>
       ipcRenderer.invoke(IPC.mediaAnnotations, mediaId),
     views: (mediaId: number): Promise<MediaViews> => ipcRenderer.invoke(IPC.mediaViews, mediaId),

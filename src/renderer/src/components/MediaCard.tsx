@@ -11,7 +11,7 @@ export interface MediaCardProps {
   /** Shift-click: extend the selection to this card. */
   onExtendSelect?: () => void
   selected?: boolean
-  onContextMenu?: (mediaId: number) => void
+  onContextMenu?: (mediaId: number, x: number, y: number) => void
   /** The heart in the corner. Absent means the card shows no heart at all. */
   onToggleFavorite?: (item: MediaItem) => void
 }
@@ -54,7 +54,7 @@ export function MediaCard({
       }}
       onContextMenu={(event) => {
         event.preventDefault()
-        onContextMenu?.(item.id)
+        onContextMenu?.(item.id, event.clientX, event.clientY)
       }}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {

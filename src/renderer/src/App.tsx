@@ -19,7 +19,8 @@ import { CoWatchBar } from './components/CoWatchBar'
 import { Duplicates } from './components/Duplicates'
 import { Lightbox } from './components/Lightbox'
 import { MediaGrid } from './components/MediaGrid'
-import { NamePrompt } from './components/NamePrompt'
+import { MediaMenu } from './components/MediaMenu'
+import type { MenuAt } from './components/MediaMenu'
 import { ScanBar } from './components/ScanBar'
 import { ScrapeBar } from './components/ScrapeBar'
 import { SettingsSheet } from './components/SettingsSheet'
@@ -945,44 +946,31 @@ export default function App(): React.JSX.Element {
     [guard, refreshSidebar, tagId, view],
   )
 
-  /** Set while a context-menu "New …" item is waiting for a name. */
-  const [pendingCollectionFor, setPendingCollectionFor] = useState<number | null>(null)
-  const [pendingTagFor, setPendingTagFor] = useState<number | null>(null)
+  /** Where the right-click menu is open, and on what. */
+  const [menuAt, setMenuAt] = useState<MenuAt | null>(null)
 
   const showContextMenu = useCallback(
-    (mediaId: number) =>
-      void guard(() => window.goonlib.media.showContextMenu({ mediaId, collectionId })),
-    [guard, collectionId],
+    (mediaId: number, x: number, y: number) => setMenuAt({ mediaId, x, y }),
+    [],
   )
 
-  // The menu itself runs in the main process; these are the outcomes that need
-  // the renderer to do something.
+  // The item the menu is about, fetched rather than taken from the grid: the
+  // menu outlives a page of results, and needs the item's current favourite.
+  const [menuItem, setMenuItem] = useState<MediaItem | null>(null)
   useEffect(() => {
-    return window.goonlib.media.onContextMenuAction(({ action, payload }) => {
-      if (action === 'changed') {
-        void refreshSidebar()
-        viewRef.current.refresh()
-        return
-      }
-
-      if (action === 'new-collection') {
-        setPendingCollectionFor(payload.mediaId)
-        return
-      }
-
-      if (action === 'new-tag') {
-        setPendingTagFor(payload.mediaId)
-        return
-      }
-
-      if (action === 'open') {
-        // Menus are raised from a card, so the index is whatever currently holds
-        // that id in the visible window.
-        const index = viewRef.current.indexOf(payload.mediaId)
-        if (index !== null) openAtRef.current(index)
-      }
-    })
-  }, [refreshSidebar])
+    if (!menuAt) {
+      setMenuItem(null)
+      return
+    }
+    let live = true
+    void window.goonlib.library
+      .get(menuAt.mediaId)
+      .then((item) => live && setMenuItem(item))
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+  }, [menuAt])
 
   const reorder = useCallback(
     (fromIndex: number, toIndex: number) =>
@@ -1210,40 +1198,25 @@ export default function App(): React.JSX.Element {
         />
       ) : null}
 
-      {pendingCollectionFor !== null ? (
-        <NamePrompt
-          title="New collection"
-          placeholder="Collection name"
-          onCancel={() => setPendingCollectionFor(null)}
-          onConfirm={(name) => {
-            const mediaId = pendingCollectionFor
-            setPendingCollectionFor(null)
-            void guard(async () => {
-              const created = await window.goonlib.collections.create(name)
-              await window.goonlib.collections.add(created.id, [mediaId])
-              await refreshSidebar()
-            })
+      {menuAt ? (
+        <MediaMenu
+          at={menuAt}
+          item={menuItem}
+          collections={collections}
+          tags={tags}
+          activeCollection={collections.find((entry) => entry.id === collectionId) ?? null}
+          onClose={() => setMenuAt(null)}
+          onOpen={(mediaId: number) => {
+            const index = view.indexOf(mediaId)
+            if (index !== null) openAt(index)
           }}
-        />
-      ) : null}
-
-      {pendingTagFor !== null ? (
-        <NamePrompt
-          title="New tag"
-          placeholder="Tag name"
-          confirmLabel="Add"
-          onCancel={() => setPendingTagFor(null)}
-          onConfirm={(name) => {
-            const mediaId = pendingTagFor
-            setPendingTagFor(null)
-            // `create` returns the existing tag if the name is taken, so typing a
-            // name that already exists attaches it rather than failing.
-            void guard(async () => {
-              const created = await window.goonlib.tags.create(name)
-              await window.goonlib.tags.assign(created.id, [mediaId])
-              await refreshSidebar()
-              if (tagId !== null) view.refresh()
-            })
+          onFavorite={(mediaId: number, favorite: boolean) => void changeFavorite([mediaId], favorite)}
+          onAddToCollection={addToCollection}
+          onLeaveCollection={leaveCollection}
+          onToggleTag={toggleTagOnMedia}
+          onChanged={() => {
+            void refreshSidebar()
+            view.refresh()
           }}
         />
       ) : null}

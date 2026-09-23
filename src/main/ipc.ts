@@ -13,12 +13,12 @@ import type {
   AiTestResult,
   AppInfo,
   Collection,
-  ContextMenuRequest,
   DuplicateReport,
   FolderNode,
   LibraryStats,
   MediaAnnotations,
   MediaExif,
+  MediaFileAction,
   MediaItem,
   MediaPage,
   MediaViews,
@@ -90,7 +90,7 @@ import {
 } from './db/queries'
 import { resolveWithinRoot } from './protocol/confine'
 import { ffmpegPath, ffprobePath } from './ffmpeg'
-import { showMediaContextMenu } from './menu'
+import { runFileAction } from './menu'
 import { preparer } from './media/prepare'
 import { indexer } from './scan/indexer'
 import { scraper } from './scrape/scraper'
@@ -239,9 +239,11 @@ export function registerIpc(): void {
   handle(IPC.mediaUndoTrash, (): Promise<TrashUndoResult> => trashHistory.undo())
   handle(IPC.mediaRedoTrash, (): Promise<TrashUndoResult> => trashHistory.redo())
 
-  handle(IPC.mediaContextMenu, async (event, request: ContextMenuRequest): Promise<void> => {
-    await showMediaContextMenu(BrowserWindow.fromWebContents(event.sender), request)
-  })
+  handle(
+    IPC.mediaFileAction,
+    (event, action: MediaFileAction, mediaId: number): Promise<boolean> =>
+      runFileAction(BrowserWindow.fromWebContents(event.sender), action, Number(mediaId)),
+  )
 
   handle(IPC.mediaMove, async (event, mediaIds: number[]): Promise<MoveResult> => {
     const idle: MoveResult = {

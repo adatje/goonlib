@@ -222,17 +222,15 @@ export interface DuplicateReport {
   pending: number
 }
 
-export interface ContextMenuRequest {
-  mediaId: number
-  /** The collection currently being viewed, enabling "Remove from…". */
-  collectionId?: number | null
-}
+/** What the right-click menu asks the main process to do with a file. */
+export type MediaFileAction =
+  | 'copy'
+  | 'copy-image'
+  | 'copy-path'
+  | 'copy-name'
+  | 'reveal'
+  | 'trash'
 
-/**
- * What the user picked. `open`, `new-collection`, and `new-tag` need the
- * renderer to act — the last two because a native menu has no text input;
- * `changed` just means the library moved under it and it should refresh.
- */
 /**
  * How the viewer behaves around starting and finishing a video.
  *
@@ -418,11 +416,6 @@ export interface MoveResult {
   skipped: number
   /** Couldn't be moved; the file is wherever it was. */
   failed: number
-}
-
-export interface ContextMenuAction {
-  action: 'open' | 'new-collection' | 'new-tag' | 'changed'
-  payload: { mediaId: number }
 }
 
 export interface PreparedMedia {
@@ -792,9 +785,7 @@ export const IPC = {
   collectionsOf: 'collections:of',
   collectionsMove: 'collections:move',
   collectionsSetCover: 'collections:set-cover',
-  mediaContextMenu: 'media:context-menu',
-  /** Main -> renderer: the user chose something in the context menu. */
-  contextMenuAction: 'media:context-menu-action',
+  mediaFileAction: 'media:file-action',
   duplicatesFind: 'duplicates:find',
   duplicatesDistance: 'duplicates:distance',
   duplicatesSetDistance: 'duplicates:set-distance',
@@ -1004,8 +995,12 @@ export interface GoonLibApi {
     /** Opens the enclosing folder and selects the file. */
     reveal(mediaId: number): Promise<void>
     /** Pops up the native right-click menu for an item. */
-    showContextMenu(request: ContextMenuRequest): Promise<void>
-    onContextMenuAction(listener: (action: ContextMenuAction) => void): () => void
+    /**
+     * One of the right-click menu's actions that only the main process can do:
+     * the clipboard, the Finder, the Trash. False when there was nothing to
+     * act on, such as a file that has gone missing.
+     */
+    fileAction(action: MediaFileAction, mediaId: number): Promise<boolean>
     /** Labels and caption for one item; labels are best-guess first. */
     annotations(mediaId: number): Promise<MediaAnnotations>
     /** How often the item has been viewed, and for how long in all. */

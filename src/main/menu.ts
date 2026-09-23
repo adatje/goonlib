@@ -1,194 +1,57 @@
 /**
- * The right-click menu for media items.
+ * The parts of the right-click menu that only the main process can do: the
+ * clipboard, the Finder, the Trash.
  *
- * Built as a native Electron menu rather than an HTML one: on macOS an in-page
- * menu is immediately recognisable as fake — wrong font, wrong shadow, no
- * keyboard traversal, no submenu timing — and this is exactly the interaction
- * where people expect the system's own behaviour.
- *
- * The actions live here rather than in the renderer because every one of them
- * touches something the renderer has no business reaching: the clipboard, the
- * Finder, the Trash.
+ * The menu itself is drawn by the renderer now, in the app's own colours, with
+ * the same collection and tag menus the viewer has — a native menu could not
+ * take a new collection's name, and could not look like the rest of the app on
+ * three platforms. What is left here is everything that touches the machine.
  */
 
-import { BrowserWindow, clipboard, Menu, nativeImage, shell } from 'electron'
-import type { MenuItemConstructorOptions } from 'electron'
-import { IPC } from '@shared/types'
-import type { ContextMenuRequest } from '@shared/types'
-import {
-  addToCollection,
-  getCollection,
-  listCollections,
-  removeFromCollection,
-} from './db/collections'
-import { setFavorite } from './db/favorites'
+import { BrowserWindow, clipboard, nativeImage, shell } from 'electron'
+import type { MediaFileAction } from '@shared/types'
 import { getMedia } from './db/media'
 import { getMediaLocation } from './db/queries'
-import { listTags, tagIdsFor, tagMedia, untagMedia } from './db/tags'
 import { resolveWithinRoot } from './protocol/confine'
 import { trashHistory } from './trash'
 
-/** Tells the renderer something changed, or asks it to prompt for a name. */
-function notify(window: BrowserWindow | null, action: string, payload: unknown): void {
-  if (window && !window.isDestroyed()) window.webContents.send(IPC.contextMenuAction, { action, payload })
-}
-
-export async function showMediaContextMenu(
-  window: BrowserWindow | null,
-  request: ContextMenuRequest,
-): Promise<void> {
-  const item = getMedia(request.mediaId)
-  if (!item) return
-
-  const location = getMediaLocation(request.mediaId)
-  const absPath = location
-    ? await resolveWithinRoot(location.rootPath, location.relPath)
-    : null
-
-  const collections = listCollections()
-  const activeCollection =
-    request.collectionId !== undefined && request.collectionId !== null
-      ? getCollection(request.collectionId)
-      : null
-
-  const template: MenuItemConstructorOptions[] = [
-    {
-      label: item.kind === 'video' ? 'Play' : 'Open',
-      click: () => notify(window, 'open', { mediaId: item.id }),
-    },
-    {
-      label: 'Favorite',
-      // A checkbox, like Tags: the tick is the current state and clicking flips it.
-      type: 'checkbox',
-      checked: item.favoritedAt !== null,
-      click: () => {
-        setFavorite([item.id], item.favoritedAt === null)
-        notify(window, 'changed', { mediaId: item.id })
-      },
-    },
-    { type: 'separator' },
-    {
-      label: 'Collections',
-      submenu: [
-        ...collections.map<MenuItemConstructorOptions>((collection) => ({
-          label: collection.name,
-          // Already a member: show it ticked and do nothing rather than hiding it,
-          // so the menu reads as a consistent list of where this item lives.
-          enabled: collection.id !== activeCollection?.id,
-          click: () => {
-            addToCollection(collection.id, [item.id])
-            notify(window, 'changed', { mediaId: item.id })
-          },
-        })),
-        ...(collections.length > 0 ? [{ type: 'separator' } as MenuItemConstructorOptions] : []),
-        {
-          label: 'New Collection…',
-          // Native menus can't take text input, so the renderer prompts.
-          click: () => notify(window, 'new-collection', { mediaId: item.id }),
-        },
-      ],
-    },
-    ...(activeCollection
-      ? [
-          {
-            label: `Remove from “${activeCollection.name}”`,
-            click: () => {
-              removeFromCollection(activeCollection.id, [item.id])
-              notify(window, 'changed', { mediaId: item.id })
-            },
-          } as MenuItemConstructorOptions,
-        ]
-      : []),
-    {
-      label: 'Tags',
-      submenu: tagSubmenu(window, item.id),
-    },
-    { type: 'separator' },
-    {
-      label: 'Copy',
-      enabled: absPath !== null,
-      // Copies the file itself, so it can be pasted into Finder, Mail, Messages.
-      click: () => absPath && copyFiles([absPath]),
-    },
-    ...(item.kind === 'image'
-      ? [
-          {
-            label: 'Copy Image',
-            enabled: absPath !== null,
-            click: () => absPath && copyImage(absPath),
-          } as MenuItemConstructorOptions,
-        ]
-      : []),
-    {
-      label: 'Copy File Path',
-      enabled: absPath !== null,
-      click: () => absPath && clipboard.writeText(absPath),
-    },
-    {
-      label: 'Copy Filename',
-      click: () => clipboard.writeText(item.name),
-    },
-    { type: 'separator' },
-    {
-      label: 'Reveal in Finder',
-      enabled: absPath !== null,
-      click: () => absPath && shell.showItemInFolder(absPath),
-    },
-    { type: 'separator' },
-    {
-      // No ellipsis: it no longer opens anything, it just does it.
-      label: 'Move to Trash',
-      enabled: absPath !== null,
-      click: () => {
-        if (absPath) void moveToTrash(window, item.id, absPath)
-      },
-    },
-  ]
-
-  Menu.buildFromTemplate(template).popup(window ? { window } : undefined)
-}
-
 /**
- * The Tags submenu: every tag as a checkbox, ticked when this item carries it.
- *
- * One list that both adds and removes, rather than an "Add tag" menu and a
- * separate "Remove tag" one — a checkbox already means "this is on, click to
- * turn it off" everywhere else on the system, and it keeps the item's whole tag
- * state visible at a glance.
- *
- * Tags already on the item sort to the top. Removing one is the reason you open
- * this menu, and a library that has been classified can have a long tail of
- * AI-suggested tags that would otherwise bury them.
+ * Carries out one of those actions on one item. Resolves false when there was
+ * nothing to act on — a file that has gone missing, say.
  */
-function tagSubmenu(window: BrowserWindow | null, mediaId: number): MenuItemConstructorOptions[] {
-  const attached = new Set(tagIdsFor(mediaId))
-  const tags = listTags()
+export async function runFileAction(
+  window: BrowserWindow | null,
+  action: MediaFileAction,
+  mediaId: number,
+): Promise<boolean> {
+  const item = getMedia(mediaId)
+  if (!item) return false
 
-  const ordered = [
-    ...tags.filter((tag) => attached.has(tag.id)),
-    ...tags.filter((tag) => !attached.has(tag.id)),
-  ]
+  if (action === 'copy-name') {
+    clipboard.writeText(item.name)
+    return true
+  }
 
-  const entries = ordered.map<MenuItemConstructorOptions>((tag) => ({
-    label: tag.name,
-    type: 'checkbox',
-    checked: attached.has(tag.id),
-    click: () => {
-      if (attached.has(tag.id)) untagMedia(tag.id, [mediaId])
-      else tagMedia(tag.id, [mediaId])
-      notify(window, 'changed', { mediaId })
-    },
-  }))
+  const location = getMediaLocation(mediaId)
+  const path = location ? await resolveWithinRoot(location.rootPath, location.relPath) : null
+  if (!path) return false
 
-  return [
-    ...entries,
-    ...(entries.length > 0 ? [{ type: 'separator' } as MenuItemConstructorOptions] : []),
-    {
-      label: 'New Tag…',
-      // Native menus can't take text input, so the renderer prompts.
-      click: () => notify(window, 'new-tag', { mediaId }),
-    },
-  ]
+  switch (action) {
+    case 'copy':
+      copyFiles([path])
+      return true
+    case 'copy-image':
+      copyImage(path)
+      return true
+    case 'copy-path':
+      clipboard.writeText(path)
+      return true
+    case 'reveal':
+      shell.showItemInFolder(path)
+      return true
+    case 'trash':
+      return moveToTrash(mediaId, path)
+  }
 }
 
 /**
@@ -239,16 +102,13 @@ function escapeXml(value: string): string {
  * the system Trash rather than being unlinked. The bulk path in ipc.ts still
  * asks, because there the count is the thing worth checking.
  */
-async function moveToTrash(
-  window: BrowserWindow | null,
-  mediaId: number,
-  absPath: string,
-): Promise<void> {
+async function moveToTrash(mediaId: number, absPath: string): Promise<boolean> {
   try {
     // Through the history, so Cmd/Ctrl+Z can put it back.
     trashHistory.record([await trashHistory.trash(mediaId, absPath)])
-    notify(window, 'changed', { mediaId })
+    return true
   } catch (err) {
     console.error(`[trash] failed for ${absPath}:`, err)
+    return false
   }
 }

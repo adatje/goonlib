@@ -53,7 +53,7 @@ export interface LightboxProps {
   onRandomKind: (kind: PlaybackPrefs['randomKind']) => void
   onRandom: () => void
   /** Raises the native item menu for whatever is on screen. */
-  onContextMenu?: (mediaId: number) => void
+  onContextMenu?: (mediaId: number, x: number, y: number) => void
   /** Moves the item being viewed to the Trash. */
   onTrash?: (mediaId: number) => void
   /** Flips the heart on the item being viewed. */
@@ -585,7 +585,7 @@ export function Lightbox(props: LightboxProps): React.JSX.Element {
         // own media menu on a <video>, and without this that one wins.
         onContextMenu={(event) => {
           event.preventDefault()
-          props.onContextMenu?.(item.id)
+          props.onContextMenu?.(item.id, event.clientX, event.clientY)
         }}
       >
         {item.kind === 'video' ? (

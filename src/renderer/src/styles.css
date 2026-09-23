@@ -4156,3 +4156,72 @@ button.styling__reset:hover {
   font-size: 9px;
   letter-spacing: 0.4px;
 }
+
+/* The right-click menu, in the app's own colours rather than the system's. */
+.mediamenu {
+  position: fixed;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  min-width: 210px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg-raised);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+}
+
+.mediamenu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mediamenu__item:hover {
+  background: var(--list-hover);
+}
+
+.mediamenu__item--danger {
+  color: var(--danger-text);
+}
+
+.mediamenu__item--danger:hover {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+}
+
+.mediamenu__rule {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--border);
+}
+
+/* Filing, in the same menus the viewer uses, stacked to the menu's width. */
+.mediamenu__row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px 4px;
+}
+
+.mediamenu__row .addto__trigger {
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+}
+
+/* Its menus hang beside the item's menu rather than under it, as submenus do. */
+.mediamenu__row .addto__menu {
+  top: -5px;
+  left: calc(100% + 6px);
+}

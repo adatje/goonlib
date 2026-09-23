@@ -13,7 +13,7 @@ export interface MediaGridProps {
   /** Enables drag-to-reorder, which only means anything inside a collection. */
   reorderable?: boolean
   onReorder?: (fromIndex: number, toIndex: number) => void
-  onContextMenu?: (mediaId: number) => void
+  onContextMenu?: (mediaId: number, x: number, y: number) => void
   onToggleFavorite?: (item: MediaItem) => void
 }
 
