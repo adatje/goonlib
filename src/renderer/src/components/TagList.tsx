@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import type { Tag } from '@shared/types'
 import { formatCount } from '../format'
 import { TagIcon } from './SidebarIcons'
-import { SidebarSection } from './SidebarSection'
+import { matchesFilter, SidebarSection, useSectionFilter } from './SidebarSection'
 
 export interface TagListProps {
   tags: Tag[]
@@ -36,22 +36,26 @@ export function TagList(props: TagListProps): React.JSX.Element {
     setCreating(false)
   }, [draft, onCreate])
 
+  const [filter, chooseFilter] = useSectionFilter('tags')
+  const shown = tags.filter((tag) => matchesFilter(filter, tag))
+
   return (
     <SidebarSection
       title="Tags"
       id="tags"
-      count={tags.length}
+      count={shown.length}
       icon={<TagIcon />}
       active={props.selectedId !== null}
+      filter={{ value: filter, onChange: chooseFilter }}
     >
 
-      {tags.length === 0 && !creating ? (
-        <p className="muted">None yet.</p>
+      {shown.length === 0 && !creating ? (
+        <p className="muted">{tags.length === 0 ? 'None yet.' : 'None of those here.'}</p>
       ) : (
         // Capped and scrollable: a classified library can easily produce more
         // tags than collections, and it must not push the folder tree off-screen.
         <ul className="collection-list collection-list--capped">
-          {tags.map((tag) => (
+          {shown.map((tag) => (
             <li key={tag.id} className="collection">
               {editingId === tag.id ? (
                 <input

@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import type { Collection } from '@shared/types'
 import { formatCount } from '../format'
 import { CollectionsIcon } from './SidebarIcons'
-import { SidebarSection } from './SidebarSection'
+import { matchesFilter, SidebarSection, useSectionFilter } from './SidebarSection'
 
 export interface CollectionListProps {
   collections: Collection[]
@@ -27,20 +27,24 @@ export function CollectionList(props: CollectionListProps): React.JSX.Element {
     setCreating(false)
   }, [draft, onCreate])
 
+  const [filter, chooseFilter] = useSectionFilter('collections')
+  const shown = collections.filter((collection) => matchesFilter(filter, collection))
+
   return (
     <SidebarSection
       title="Collections"
       id="collections"
-      count={collections.length}
+      count={shown.length}
       icon={<CollectionsIcon />}
       active={selectedId !== null}
+      filter={{ value: filter, onChange: chooseFilter }}
     >
 
-      {collections.length === 0 && !creating ? (
-        <p className="muted">None yet.</p>
+      {shown.length === 0 && !creating ? (
+        <p className="muted">{collections.length === 0 ? 'None yet.' : 'None of those here.'}</p>
       ) : (
         <ul className="collection-list">
-          {collections.map((collection) => (
+          {shown.map((collection) => (
             <li key={collection.id} className="collection">
               {editingId === collection.id ? (
                 <input

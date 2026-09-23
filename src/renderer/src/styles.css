@@ -4145,3 +4145,14 @@ button.styling__reset:hover {
 .addto__item[aria-checked='true'] .toychip__glyph {
   color: var(--icon);
 }
+
+/* What a section is showing, when it is not showing everything. */
+.sidebar__filter {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--list-active);
+  color: var(--icon);
+  font-size: 9px;
+  letter-spacing: 0.4px;
+}
