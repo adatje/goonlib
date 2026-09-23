@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { clashesWith, describeBinding, KEY_ACTIONS, bindingFromEvent } from '@shared/keys'
 import { accept, useBindings } from '../keys'
+import { IS_MAC, withTrashName } from '../platform'
 
 /**
  * Settings → Shortcuts: the same list as the card, with every key changeable.
@@ -14,7 +15,6 @@ export function ShortcutsSettings(): React.JSX.Element {
   const bindings = useBindings()
   const [recording, setRecording] = useState<string | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
-  const mac = navigator.platform.toLowerCase().includes('mac')
 
   useEffect(() => {
     if (!recording) return
@@ -37,7 +37,7 @@ export function ShortcutsSettings(): React.JSX.Element {
       const clashes = clashesWith(bindings, action.context, pressed, action.id)
       if (clashes.length > 0) {
         const other = KEY_ACTIONS.find((entry) => entry.id === clashes[0])
-        setProblem(`${describeBinding(pressed, mac)} already does “${other?.label ?? clashes[0]}”.`)
+        setProblem(`${describeBinding(pressed, IS_MAC)} already does “${withTrashName(other?.label ?? clashes[0] ?? "")}”.`)
         setRecording(null)
         return
       }
@@ -52,7 +52,7 @@ export function ShortcutsSettings(): React.JSX.Element {
 
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [recording, bindings, mac])
+  }, [recording, bindings])
 
   const groups = [...new Set(KEY_ACTIONS.map((action) => action.group))]
 
@@ -77,7 +77,7 @@ export function ShortcutsSettings(): React.JSX.Element {
           <span className="settings__label">{group}</span>
           {KEY_ACTIONS.filter((action) => action.group === group).map((action) => (
             <div key={action.id} className="shortcuts__setting">
-              <span className="shortcuts__label">{action.label}</span>
+              <span className="shortcuts__label">{withTrashName(action.label)}</span>
               <button
                 type="button"
                 className={recording === action.id ? 'button button--on' : 'button button--quiet'}
@@ -91,14 +91,14 @@ export function ShortcutsSettings(): React.JSX.Element {
                   ? 'Press a key…'
                   : (bindings[action.id] ?? []).length === 0
                     ? 'Unset'
-                    : (bindings[action.id] ?? []).map((binding) => describeBinding(binding, mac)).join('  ')}
+                    : (bindings[action.id] ?? []).map((binding) => describeBinding(binding, IS_MAC)).join('  ')}
               </button>
               <button
                 type="button"
                 className="styling__reset"
                 onClick={() => void window.goonlib.keys.set(action.id, []).then(accept).catch(() => undefined)}
                 title="Leave this without a key"
-                aria-label={`Clear ${action.label}`}
+                aria-label={`Clear ${withTrashName(action.label)}`}
               >
                 ×
               </button>

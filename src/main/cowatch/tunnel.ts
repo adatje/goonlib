@@ -31,17 +31,25 @@ const STARTUP_TIMEOUT_MS = 30_000
 /**
  * Where package managers put things, for when PATH does not say.
  *
- * An app launched from Finder or the Dock inherits a minimal PATH — typically
+ * An app launched from the Finder or the Dock inherits a minimal PATH — typically
  * just /usr/bin:/bin:/usr/sbin:/sbin — so a Homebrew install is invisible to it
  * even though the same binary is obviously present in a terminal. Without this,
  * the feature works in development and mysteriously does not in the shipped app.
  */
-const EXTRA_PATHS = [
-  '/opt/homebrew/bin',
-  '/usr/local/bin',
-  '/opt/local/bin',
-  join(process.env['HOME'] ?? '', '.local/bin'),
-]
+const EXTRA_PATHS =
+  process.platform === 'win32'
+    ? // winget links its installs here, and chocolatey shims its own; neither is
+      // guaranteed to be on the PATH a packaged app inherits.
+      [
+        join(process.env['LOCALAPPDATA'] ?? '', 'Microsoft', 'WinGet', 'Links'),
+        join(process.env['ProgramData'] ?? '', 'chocolatey', 'bin'),
+      ]
+    : [
+        '/opt/homebrew/bin',
+        '/usr/local/bin',
+        '/opt/local/bin',
+        join(process.env['HOME'] ?? '', '.local/bin'),
+      ]
 
 /**
  * Ordered by how little the user has to have done first. A cloudflared quick

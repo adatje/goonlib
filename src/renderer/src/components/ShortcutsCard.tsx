@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { describeBinding, KEY_ACTIONS } from '@shared/keys'
 import { useBindings } from '../keys'
+import { IS_MAC, withTrashName } from '../platform'
 
 /**
  * Every shortcut, as a card. Read-only on purpose: this is what you open
@@ -9,7 +10,6 @@ import { useBindings } from '../keys'
  */
 export function ShortcutsCard({ onClose }: { onClose: () => void }): React.JSX.Element {
   const bindings = useBindings()
-  const mac = navigator.platform.toLowerCase().includes('mac')
 
   useEffect(() => {
     const escape = (event: KeyboardEvent): void => {
@@ -46,14 +46,14 @@ export function ShortcutsCard({ onClose }: { onClose: () => void }): React.JSX.E
               <dl className="shortcuts__list">
                 {KEY_ACTIONS.filter((action) => action.group === group).map((action) => (
                   <div key={action.id} className="shortcuts__row">
-                    <dt>{action.label}</dt>
+                    <dt>{withTrashName(action.label)}</dt>
                     <dd>
                       {(bindings[action.id] ?? []).length === 0 ? (
                         <span className="muted">unset</span>
                       ) : (
                         (bindings[action.id] ?? []).map((binding) => (
                           <kbd key={binding} className="shortcuts__key">
-                            {describeBinding(binding, mac)}
+                            {describeBinding(binding, IS_MAC)}
                           </kbd>
                         ))
                       )}

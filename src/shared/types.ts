@@ -76,6 +76,14 @@ export interface LibraryStats {
   favorites: number
 }
 
+/**
+ * The three platforms the app is built for. Anything else Node might report is
+ * folded into 'linux' by the bridge: the differences that matter here are the
+ * window chrome, the name of the file manager and the Recycle Bin, and on that
+ * score every other Unix behaves like Linux.
+ */
+export type Platform = 'darwin' | 'win32' | 'linux'
+
 export interface AppInfo {
   version: string
   electron: string
@@ -957,6 +965,11 @@ export const IPC = {
 export interface GoonLibApi {
   app: {
     info(): Promise<AppInfo>
+    /**
+     * Which platform this is, available without waiting: the window chrome is
+     * laid out from it before the first paint.
+     */
+    platform: Platform
   }
   roots: {
     list(): Promise<Root[]>

@@ -302,6 +302,14 @@ export class EngineProcess {
     }
 
     const tail = strip(this.output).trim().split('\n').slice(-2).join(' ').trim()
+
+    // Linux reaches Bluetooth through BlueZ, over D-Bus. On a machine where
+    // bluetoothd is not running the engine exits at once with a D-Bus error,
+    // which on its own reads like a fault in GoonLib.
+    if (process.platform === 'linux' && /dbus|bluez|bluetoothd/i.test(tail)) {
+      return 'The Intiface engine could not reach Bluetooth. Linux goes through BlueZ, so check that the bluetooth service is running (systemctl status bluetooth) and that your user may use it, then connect again.'
+    }
+
     const base = `The Intiface engine stopped as soon as it started (${reason ?? 'no exit code'}).`
     return tail ? `${base} ${tail}` : base
   }

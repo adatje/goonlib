@@ -1,0 +1,106 @@
+# Builds GoonLib on all three platforms and attaches the results to a release.
+#
+# The native pieces - better-sqlite3 rebuilt against Electron's ABI, sharp, and
+# the bundled ffmpeg and ffprobe - cannot be cross-built from one machine with
+# any confidence, so each platform builds its own on a runner of its own.
+#
+# Pushing a v* tag builds and publishes. Running it by hand builds the same
+# artifacts and keeps them for a week without publishing anything, which is how
+# a change to this file gets tested without cutting a release.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # The suite is pure logic and file handling, and one run of it says as much as
+  # three would. It runs where it is cheapest and gates the builds.
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  build:
+    name: ${{ matrix.name }}
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # One platform failing should not throw away the builds that worked.
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: macOS
+            # Both Apple Silicon and Intel, as electron-builder.yml asks for.
+            artifacts: release/*.dmg
+          - os: windows-latest
+            name: Windows
+            artifacts: release/*.exe
+          - os: ubuntu-latest
+            name: Linux
+            artifacts: release/*.AppImage
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # postinstall runs electron-builder install-app-deps, which is what
+      # rebuilds better-sqlite3 against Electron rather than against Node.
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run dist -- --publish never
+        env:
+          # Nothing is signed yet: see docs/cross-platform-plan.md. Without this,
+          # electron-builder looks for a macOS identity and fails when it is a
+          # tagged build rather than skipping.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Keep the build
+        uses: actions/upload-artifact@v4
+        with:
+          name: goonlib-${{ matrix.os }}
+          path: ${{ matrix.artifacts }}
+          retention-days: 7
+          if-no-files-found: error
+
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    # Only a tag becomes a release; a manual run stops at the artifacts above.
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # A draft, so the notes can be written before anyone sees it.
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --title "GoonLib ${TAG#v}" --generate-notes
+          find artifacts -type f \( -name '*.dmg' -o -name '*.exe' -o -name '*.AppImage' \) \
+            -exec gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber {} +

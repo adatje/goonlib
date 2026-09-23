@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { CoWatchGuest, CoWatchKnock, CoWatchTunnelProvider } from '@shared/types'
+import { CLOUDFLARED_INSTALL, IS_WINDOWS } from '../platform'
 import type { CoWatchView } from '../state/useCoWatch'
 
 export interface CoWatchSectionProps {
@@ -20,6 +21,19 @@ export interface CoWatchSectionProps {
 /** Where a session is reachable from: through one of the tunnels, or this network only. */
 type Reach = CoWatchTunnelProvider | 'lan'
 
+/** How to get cloudflared, in the words of this platform. */
+const CLOUDFLARED_NOTE: React.ReactNode = CLOUDFLARED_INSTALL ? (
+  <>
+    No account needed. Install with: <code className="settings__code">{CLOUDFLARED_INSTALL}</code>
+  </>
+) : (
+  <>No account needed. Install cloudflared from your package manager or Cloudflare&apos;s downloads.</>
+)
+
+const CLOUDFLARED_TITLE = CLOUDFLARED_INSTALL
+  ? `No account needed. Install with: ${CLOUDFLARED_INSTALL}`
+  : "No account needed. Install cloudflared from your package manager or Cloudflare's downloads."
+
 const PROVIDERS: Array<{ id: Reach; label: string; note: React.ReactNode; title: string }> = [
   {
     id: 'auto',
@@ -30,12 +44,8 @@ const PROVIDERS: Array<{ id: Reach; label: string; note: React.ReactNode; title:
   {
     id: 'cloudflared',
     label: 'cloudflared',
-    note: (
-      <>
-        No account needed. Install with: <code className="settings__code">brew install cloudflared</code>
-      </>
-    ),
-    title: 'No account needed. Install with: brew install cloudflared',
+    note: CLOUDFLARED_NOTE,
+    title: CLOUDFLARED_TITLE,
   },
   {
     id: 'ngrok',
@@ -127,10 +137,7 @@ export function CoWatchSection({ cowatch }: CoWatchSectionProps): React.JSX.Elem
               {provider === 'lan' || (session.available.length > 0 && !noteFor(provider)) ? null : (
                 <p className="settings__hint">
                   {session.available.length === 0 ? (
-                    <>
-                      Neither is installed. <code className="settings__code">brew install cloudflared</code> - its
-                      quick tunnels need no account.
-                    </>
+                    <>Neither is installed. {CLOUDFLARED_NOTE}</>
                   ) : (
                     noteFor(provider)
                   )}
@@ -140,6 +147,13 @@ export function CoWatchSection({ cowatch }: CoWatchSectionProps): React.JSX.Elem
               {provider === 'lan' ? null : (
                 <p className="settings__hint">Works anywhere, through a tunnel on your own machine.</p>
               )}
+
+              {IS_WINDOWS ? (
+                <p className="settings__hint">
+                  Starting a session opens a port, so Windows asks about its firewall the first time.
+                  Allow it on private networks.
+                </p>
+              ) : null}
 
               <button
                 type="button"

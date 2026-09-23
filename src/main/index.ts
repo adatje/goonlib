@@ -5,6 +5,7 @@ import { ensureCacheDirs } from './cache'
 import { cowatch } from './cowatch'
 import { closeDb, initDb } from './db'
 import { registerIpc } from './ipc'
+import { installAppMenu } from './menu'
 import { MEDIA_SCHEME, registerMediaProtocol, registerMediaScheme } from './protocol'
 import { indexer } from './scan/indexer'
 import { themes } from './theme'
@@ -94,6 +95,9 @@ function createWindow(): BrowserWindow {
     show: false,
     backgroundColor: themes.windowBackground(),
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    // Windows and Linux draw the menu bar inside the window. Ours holds only
+    // the keys people expect to work, so it stays out of sight until Alt.
+    autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -163,12 +167,16 @@ const AUTHOR = '@Adatje'
 
 app.whenReady().then(async () => {
   applyDevDockIcon()
-  app.setAboutPanelOptions({
-    applicationName: 'GoonLib',
-    applicationVersion: app.getVersion(),
-    credits: `Author: ${AUTHOR}`,
-    copyright: `Copyright © 2026 ${AUTHOR}`,
-  })
+  // macOS only; the other two get a short menu of their own instead.
+  if (process.platform === 'darwin') {
+    app.setAboutPanelOptions({
+      applicationName: 'GoonLib',
+      applicationVersion: app.getVersion(),
+      credits: `Author: ${AUTHOR}`,
+      copyright: `Copyright © 2026 ${AUTHOR}`,
+    })
+  }
+  installAppMenu()
   initDb()
   ensureCacheDirs()
   applySecurityPolicy()

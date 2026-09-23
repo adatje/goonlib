@@ -1,4 +1,5 @@
 import { formatCount } from '../format'
+import { TRASH_NAME } from '../platform'
 import type { Selection } from '../state/useSelection'
 
 export interface SelectionBarProps {
@@ -84,7 +85,7 @@ export function SelectionBar({
         onClick={onTrash}
         title="Moves the selected files to the system Trash after confirmation"
       >
-        {busy ? 'Moving…' : 'Move to Trash'}
+        {busy ? 'Moving…' : `Move to ${TRASH_NAME}`}
       </button>
     </div>
   )

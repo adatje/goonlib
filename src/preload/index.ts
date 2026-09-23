@@ -37,6 +37,7 @@ import type {
   MediaPage,
   MoveResult,
   MediaQuery,
+  Platform,
   PlaybackPrefs,
   PrepareProgress,
   PreparedMedia,
@@ -52,9 +53,20 @@ import type {
   ToyStatus,
 } from '@shared/types'
 
+/**
+ * Which platform this is, as the renderer cares about it. Read here rather than
+ * from `navigator`, whose platform string is deprecated and lies on purpose.
+ */
+function platform(): Platform {
+  if (process.platform === 'darwin') return 'darwin'
+  if (process.platform === 'win32') return 'win32'
+  return 'linux'
+}
+
 const api: GoonLibApi = {
   app: {
     info: (): Promise<AppInfo> => ipcRenderer.invoke(IPC.appInfo),
+    platform: platform(),
   },
   roots: {
     list: (): Promise<Root[]> => ipcRenderer.invoke(IPC.rootsList),

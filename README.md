@@ -44,7 +44,8 @@ watch with you, in step: play, pause and seek are shared.
 Reaching a guest who is not on your network needs a tunnel you already have:
 
 ```bash
-brew install cloudflared
+brew install cloudflared            # macOS
+winget install --id Cloudflare.cloudflared   # Windows
 ```
 
 `cloudflared` quick tunnels need no account. `ngrok` works too. Neither is bundled —
@@ -75,7 +76,23 @@ the toy too.
 
 On macOS, GoonLib needs Bluetooth permission (System Settings → Privacy & Security →
 Bluetooth). When running `npm run dev` from a terminal, it is the terminal app that
-needs it.
+needs it. On Linux it goes through BlueZ, so the `bluetooth` service has to be running.
+Windows needs nothing.
+
+## Platforms
+
+Builds are made for all three: a `.dmg` for macOS (Apple Silicon and Intel), an NSIS
+installer for Windows, and an AppImage for Linux. Each is built on its own machine by
+the release workflow, because the native pieces — better-sqlite3, sharp, ffmpeg — cannot
+be cross-built with any confidence.
+
+Nothing is signed yet, so the first launch needs a click past Gatekeeper on macOS and
+SmartScreen on Windows.
+
+Two things are macOS-only, for want of an equivalent elsewhere: copying a file itself to
+the clipboard (other platforms copy its path), and putting a deleted file back with
+Ctrl+Z — Windows' Recycle Bin does not say where it put a file, so undo there points you
+at the Recycle Bin instead.
 
 ## Running it
 

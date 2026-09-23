@@ -1,79 +1,89 @@
-# Windows and Linux: the plan
+# Windows and Linux
 
-Scheduled as the **last change before beta**, after the features are settled. The work is
-mostly presentation and packaging, and doing it earlier means redoing it every time the
-window chrome or the menus change.
+Written 2026-09-23 against 0.9.4 as a plan, and carried out in 0.9.8 - the last change
+before beta, as it was scheduled to be.
 
-Written 2026-09-23, against 0.9.4.
+## Where we already stood
 
-## Where we already stand
-
-- `electron-builder.yml` declares a Windows target (NSIS) and a Linux one (AppImage),
+- `electron-builder.yml` declared a Windows target (NSIS) and a Linux one (AppImage),
   both with icons, alongside the mac DMG.
-- The Intiface engine download carries checksums for `win32-x64`, `linux-x64` and
+- The Intiface engine download carried checksums for `win32-x64`, `linux-x64` and
   `linux-arm64`, and the engine is made executable on the platforms that need it.
 - Paths are stored with forward slashes whatever the platform (`toPosix` in the walker),
   so a library is portable.
-- Keyboard shortcuts already accept Ctrl wherever they accept Cmd.
-- `shell.trashItem`, `shell.showItemInFolder` and the media protocol are cross-platform
-  as they stand.
+- Keyboard shortcuts already accepted Ctrl wherever they accepted Cmd.
+- `shell.trashItem`, `shell.showItemInFolder` and the media protocol were already
+  cross-platform.
 
-## 1. Chrome and wording (half a day)
+## 1. Chrome and wording - done
 
-The app is dressed for macOS. Nothing here is hard; it is a pass over the places that
-assume a Mac.
+The renderer learns the platform from the bridge (`window.goonlib.app.platform`,
+wrapped by `src/renderer/src/platform.ts`) and writes it onto `<html>` before the first
+paint, so the stylesheet can lay the chrome out for it.
 
-- **Traffic-light clearance.** The toolbar, the viewer's bar and the sidebar's brand row
-  all reserve 34px at the top for the macOS window buttons (`titleBarStyle: hiddenInset`).
-  On Windows and Linux that is a bare strip, and the window's own buttons sit top right.
-  Either give those platforms a frameless window with our own buttons, or drop the inset,
-  the drag strip (`.toolbar__drag`) and the padding when `process.platform !== 'darwin'`.
-- **"Reveal in Finder"** in the right-click menu should read "Show in Explorer" on
-  Windows and "Show in file manager" on Linux.
-- **Fonts.** The stack already names Segoe UI and system-ui; check it reads well on both
-  before deciding to ship a font.
-- **The About panel** is set through `app.setAboutPanelOptions`, which is macOS only.
-  Windows and Linux need their own small About, or none.
+- **Traffic-light clearance** is now `--chrome-top` / `--chrome-top-brand`, 34/38px on
+  macOS and ordinary padding elsewhere, and the drag regions over the toolbar, the
+  sidebar brand and the duplicates bar are dropped off macOS, where the window's own
+  title bar does that job.
+- **The application menu.** Electron's default menu would have shown File/Edit/View/
+  Window/Help - and Reload and Toggle DevTools - inside the window on Windows and Linux.
+  Those two get a short one instead (`installAppMenu`), hidden behind Alt, holding only
+  quit, close, the editing keys, fullscreen and the version. macOS keeps Electron's
+  default, which is where its About panel and Cmd+C live.
+- **Wording.** "Reveal in Finder" reads "Show in Explorer" or "Show in file manager";
+  the Trash is the Recycle Bin on Windows, in the menus, the selection bar, the
+  duplicates page and the shortcuts list; "Copy" is hidden off macOS, where it would be
+  a second name for "Copy File Path"; the cloudflared install command is the one for
+  this platform, and Linux is told to find it rather than given a command that is wrong
+  on most distributions.
+- **Fonts.** The stack already named Segoe UI and system-ui. Left as it is.
 
-## 2. Build on each platform (half a day)
+## 2. Build on each platform - done
 
-The blocker. Three native pieces — better-sqlite3 (rebuilt against Electron's ABI),
-sharp, and the bundled ffmpeg/ffprobe — cannot be cross-built from a Mac with any
-confidence.
+`.github/workflows/release.yml`: the suite runs once on Linux, then macOS, Windows and
+Linux each build their own `npm run dist` on a runner of their own, because the three
+native pieces - better-sqlite3 rebuilt against Electron's ABI, sharp, and the bundled
+ffmpeg/ffprobe - cannot be cross-built from one machine with any confidence.
 
-- A GitHub Actions workflow, matrix over `macos-latest`, `windows-latest` and
-  `ubuntu-latest`, running `npm ci && npm run dist` on a `v*` tag and attaching the
-  results to the release.
+- A `v*` tag builds all three and attaches them to a draft release; running the workflow
+  by hand builds the same artifacts and keeps them for a week without publishing, which
+  is how a change to the workflow gets tested.
 - That also gives Intel Mac builds without this machine doing the work.
-- Keep `npmRebuild: true`; it is what makes better-sqlite3 match Electron.
-- Watch the artifact size: ffmpeg and sharp are most of it.
+- `npmRebuild: true` stays; it is what makes better-sqlite3 match Electron.
+- The NSIS installer asks where to install rather than being one-click.
 
-## 3. Platform behaviour that is missing or worse (a day, and optional)
+## 3. Platform behaviour - done as far as it is worth
 
 - **Undo after a delete.** `trash.ts` finds a trashed file again by device and inode, in
-  the macOS Trash or the freedesktop one. Windows' Recycle Bin works differently, so undo
-  there reports that it could not bring the file back. Either implement the Recycle Bin
-  path (a PowerShell call, or a small native helper) or say plainly in the UI that undo is
-  not available on Windows.
+  the macOS Trash or the freedesktop one. Windows' Recycle Bin does not work that way
+  and is not worth a native helper, so undo there now says the files stayed in the
+  Recycle Bin and are to be put back from there - rather than the old message, which
+  claimed they were gone or replaced.
 - **Copy.** Real files reach the clipboard only on macOS, through
-  `NSFilenamesPboardType`. Elsewhere the path is copied as text, which is useful but not
-  the same. Windows would want `CF_HDROP`, which Electron does not expose.
-- **Bluetooth.** macOS has its usage string; Windows needs nothing; Linux needs BlueZ
-  running, and deserves a clear message when it is not rather than a timeout.
+  `NSFilenamesPboardType`. Elsewhere the menu offers the path instead and says so.
+  Windows would want `CF_HDROP`, which Electron does not expose.
+- **Bluetooth.** macOS has its usage string; Windows needs nothing; a Linux machine
+  whose BlueZ is not running is told to start the bluetooth service rather than being
+  shown a D-Bus error.
 - **Firewall.** Watch Together binds a port, so Windows prompts the first time a session
-  starts. Worth a line in the UI so the prompt is expected.
+  starts. The panel says so before the button is pressed.
+- **ffmpeg on PATH.** The fallback lookup ran `/usr/bin/env which`, which does not exist
+  on Windows; it runs `where` there now, and the "install it" message names the right
+  package manager.
+- **Tunnels on PATH.** A packaged app inherits a thin PATH, so the search already looked
+  in the Homebrew and MacPorts directories; it looks in the winget and chocolatey ones
+  on Windows.
 
-## 4. Signing (money, not time)
+## 4. Signing - not done, and deliberately
 
 - **Windows:** unsigned installers get a SmartScreen warning. A certificate costs a few
-  hundred a year. Fine to ship unsigned first and see whether anyone minds.
-- **macOS:** unsigned today as well; a Developer ID and notarisation would remove the
+  hundred a year. Shipping unsigned first, and seeing whether anyone minds.
+- **macOS:** unsigned as well; a Developer ID and notarisation would remove the
   Gatekeeper warning.
 - **Linux:** AppImage needs nothing.
 
-## Order
+## Still untested
 
-1. Chrome and wording, so the app does not look transplanted.
-2. CI builds, so releases carry all three.
-3. Platform behaviour, as far as it is worth it.
-4. Signing, when someone complains.
+Everything above is written and typechecked, and the mac build is the one that has been
+run. Neither the Windows nor the Linux build has been started on real hardware, and
+until one has, both count as unproven - the first CI run is the test.

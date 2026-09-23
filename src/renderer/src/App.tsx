@@ -20,6 +20,7 @@ import { Duplicates } from './components/Duplicates'
 import { Lightbox } from './components/Lightbox'
 import { MediaGrid } from './components/MediaGrid'
 import { actionOf } from './keys'
+import { IS_WINDOWS, TRASH_NAME } from './platform'
 import { ContinueRow } from './components/ContinueRow'
 import { ShortcutsCard } from './components/ShortcutsCard'
 import { NO_FILTERS } from './components/Filters'
@@ -1319,12 +1320,17 @@ function trashNotice(undo: boolean, result: TrashUndoResult): string {
     return undo ? 'Nothing to undo' : 'Nothing to redo'
   }
   const done = undo
-    ? `Put back ${files(result.moved)} from the Trash`
-    : `Moved ${files(result.moved)} to the Trash again`
+    ? `Put back ${files(result.moved)} from the ${TRASH_NAME}`
+    : `Moved ${files(result.moved)} to the ${TRASH_NAME} again`
   if (result.failed === 0) return done
-  const missed = undo
-    ? `${files(result.failed)} could not be put back - gone from the Trash, or replaced`
-    : `${files(result.failed)} could not be trashed again`
+  // Windows never reports where the Recycle Bin put a file, so undo cannot find
+  // it again. Saying it is gone or replaced would be wrong: it is right there,
+  // waiting to be put back by hand.
+  const missed = !undo
+    ? `${files(result.failed)} could not be trashed again`
+    : IS_WINDOWS
+      ? `${files(result.failed)} stayed in the ${TRASH_NAME} - Windows does not say where it put them, so put those back from there`
+      : `${files(result.failed)} could not be put back - gone from the ${TRASH_NAME}, or replaced`
   return result.moved > 0 ? `${done}. ${missed}.` : `${missed[0]!.toUpperCase()}${missed.slice(1)}.`
 }
 

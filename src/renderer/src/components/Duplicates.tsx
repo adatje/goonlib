@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { DuplicateGroup, DuplicateReport, MediaItem } from '@shared/types'
 import { formatBytes, formatCount, formatDuration } from '../format'
+import { REVEAL_LABEL, REVEAL_SHORT, TRASH_NAME } from '../platform'
 import { markAllButLargest } from '../selection'
 import { HeartIcon } from './Toolbar'
 
@@ -193,7 +194,7 @@ export function Duplicates({ onChanged }: DuplicatesProps): React.JSX.Element {
           onClick={() => void trashSelected()}
           title="Moves the selected files to the system Trash after confirmation"
         >
-          {busy ? 'Moving…' : 'Move selected to Trash'}
+          {busy ? 'Moving…' : `Move selected to ${TRASH_NAME}`}
         </button>
       </div>
 
@@ -303,8 +304,9 @@ function Candidate({
         type="button"
         className="button button--quiet"
         onClick={() => void window.goonlib.media.reveal(item.id)}
+        title={REVEAL_LABEL}
       >
-        Reveal
+        {REVEAL_SHORT}
       </button>
     </div>
   )

@@ -8,12 +8,62 @@
  * three platforms. What is left here is everything that touches the machine.
  */
 
-import { BrowserWindow, clipboard, nativeImage, shell } from 'electron'
+import { app, BrowserWindow, clipboard, Menu, nativeImage, shell } from 'electron'
 import type { MediaFileAction } from '@shared/types'
 import { getMedia } from './db/media'
 import { getMediaLocation } from './db/queries'
 import { resolveWithinRoot } from './protocol/confine'
 import { trashHistory } from './trash'
+
+/**
+ * The application menu.
+ *
+ * macOS must have one: without it the app has no About, no Hide, no Quit, and
+ * Cmd+C stops working in a text field. Electron's default covers all of that,
+ * so on a Mac it is left alone.
+ *
+ * Windows and Linux draw the menu as a bar inside the window, where Electron's
+ * default would put File/Edit/View/Window/Help across the top of an app that
+ * has no use for any of it - and Reload and Toggle DevTools in a shipped build
+ * besides. They get a short one instead, hidden until Alt is pressed, holding
+ * only the keys people expect to work: quit, close, the editing keys, and
+ * fullscreen.
+ */
+export function installAppMenu(): void {
+  if (process.platform === 'darwin') return
+
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      {
+        label: '&File',
+        submenu: [{ role: 'close' }, { role: 'quit' }],
+      },
+      {
+        label: '&Edit',
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' },
+          { role: 'selectAll' },
+        ],
+      },
+      {
+        label: '&View',
+        submenu: [{ role: 'togglefullscreen' }],
+      },
+      {
+        label: '&Help',
+        // macOS has an About panel and these platforms do not. The version is
+        // the part of it anyone looks for; the rest - paths, Electron, Chrome -
+        // is in Settings, where there is room to read it.
+        submenu: [{ label: `GoonLib ${app.getVersion()}`, enabled: false }],
+      },
+    ]),
+  )
+}
 
 /**
  * Carries out one of those actions on one item. Resolves false when there was

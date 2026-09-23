@@ -1,9 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { markPlatform } from './platform'
 import './styles.css'
 // Before the first render, so nothing paints in the wrong colours.
 import './theme'
+
+// Likewise for the shape of the window chrome, which differs by platform.
+markPlatform()
 
 // In development React traces every render onto the performance timeline, with
 // a copy of the props that changed. With a library this size that tracing is

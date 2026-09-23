@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Collection, MediaFileAction, MediaItem, Tag } from '@shared/types'
+import { IS_MAC, REVEAL_LABEL, TRASH_NAME } from '../platform'
 import { AddToCollection } from './AddToCollection'
 
 /** Where a menu was asked for, in window coordinates. */
@@ -175,9 +176,14 @@ export function MediaMenu(props: MediaMenuProps): React.JSX.Element | null {
 
       <div className="mediamenu__rule" role="separator" />
 
-      <button type="button" className="mediamenu__item" role="menuitem" onClick={() => act('copy')}>
-        Copy
-      </button>
+      {/* Off macOS, copying a file puts its path on the clipboard as text -
+          which is what "Copy File Path" below already says it does. Showing
+          both would be two names for one thing. */}
+      {IS_MAC ? (
+        <button type="button" className="mediamenu__item" role="menuitem" onClick={() => act('copy')}>
+          Copy
+        </button>
+      ) : null}
       {item.kind === 'image' ? (
         <button type="button" className="mediamenu__item" role="menuitem" onClick={() => act('copy-image')}>
           Copy Image
@@ -193,7 +199,7 @@ export function MediaMenu(props: MediaMenuProps): React.JSX.Element | null {
       <div className="mediamenu__rule" role="separator" />
 
       <button type="button" className="mediamenu__item" role="menuitem" onClick={() => act('reveal')}>
-        Reveal in Finder
+        {REVEAL_LABEL}
       </button>
 
       <div className="mediamenu__rule" role="separator" />
@@ -204,7 +210,7 @@ export function MediaMenu(props: MediaMenuProps): React.JSX.Element | null {
         role="menuitem"
         onClick={() => act('trash')}
       >
-        Move to Trash
+        Move to {TRASH_NAME}
       </button>
     </div>
   )

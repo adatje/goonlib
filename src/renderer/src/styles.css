@@ -60,9 +60,42 @@
 
   --radius: 10px;
 
+  /*
+   * Room at the top of the window for the macOS traffic lights, which float over
+   * the page under titleBarStyle: hiddenInset. Windows and Linux keep their own
+   * title bar above the page, so there is nothing there to clear; the platform
+   * is written onto <html> before the first paint and these come down to the
+   * padding any bar would have had anyway.
+   */
+  --chrome-top: 34px;
+  --chrome-top-brand: 38px;
+
   color-scheme: dark;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   font-size: 14px;
+}
+
+:root[data-platform='win32'],
+:root[data-platform='linux'] {
+  --chrome-top: 12px;
+  --chrome-top-brand: 14px;
+}
+
+/*
+ * Dragging the window by the page is a macOS arrangement too: elsewhere the
+ * title bar does it, and a drag region over the toolbar would only swallow
+ * clicks meant for what is under it.
+ */
+:root[data-platform='win32'] .toolbar__drag,
+:root[data-platform='linux'] .toolbar__drag {
+  display: none;
+}
+
+:root[data-platform='win32'] .dupes__bar,
+:root[data-platform='linux'] .dupes__bar,
+:root[data-platform='win32'] .sidebar__brand,
+:root[data-platform='linux'] .sidebar__brand {
+  -webkit-app-region: no-drag;
 }
 
 * {
@@ -129,7 +162,7 @@ body {
   z-index: 1;
   /* Full-bleed, so nothing shows through the sidebar's side padding either. */
   margin: 0 -14px;
-  padding: 38px 20px 12px;
+  padding: var(--chrome-top-brand) 20px 12px;
   background: var(--sidebar-bg);
   font-weight: 600;
   letter-spacing: 0.2px;
@@ -645,7 +678,7 @@ body {
   gap: 10px;
   flex-shrink: 0;
   position: relative;
-  padding: 34px 20px 12px;
+  padding: var(--chrome-top) 20px 12px;
   border-bottom: 1px solid var(--border);
   background: var(--toolbar-bg);
 }
@@ -1023,7 +1056,7 @@ body {
      traffic lights float under titleBarStyle: hiddenInset. Without this top
      inset the title sits underneath them and the close button lands inside the
      window's drag region, where clicks never reach the page at all. */
-  padding: 34px 14px 12px;
+  padding: var(--chrome-top) 14px 12px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1389,7 +1422,7 @@ body {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
-  padding: 34px 20px 12px;
+  padding: var(--chrome-top) 20px 12px;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
   -webkit-app-region: drag;

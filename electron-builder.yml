@@ -43,9 +43,22 @@ win:
   target:
     - nsis
 
+# The default installer is one click and no questions, which puts a media
+# library somewhere under AppData without saying so. This one asks.
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: GoonLib
+
 linux:
   icon: build/icon.png
-  category: Graphics
+  # Images and video both, which is what this category is for.
+  category: AudioVideo;Graphics;Viewer
+  desktop:
+    entry:
+      Keywords: media;library;images;video;
   target:
     - AppImage
 

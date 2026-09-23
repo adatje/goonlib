@@ -10,6 +10,8 @@ import { execFileSync } from 'node:child_process'
 import { accessSync, closeSync, constants, openSync, readSync } from 'node:fs'
 import ffprobeInstaller from '@ffprobe-installer/ffprobe'
 import ffmpegStatic from 'ffmpeg-static'
+import { ffmpegInstallHint } from '@shared/platform'
+import { PLATFORM } from './platform'
 
 /**
  * electron-builder keeps native binaries out of the asar archive, so paths that
@@ -100,12 +102,21 @@ function bundled(raw: string | null | undefined): string | null {
   return path
 }
 
+/** Windows answers "where"; everything else answers "which". */
 function onSystemPath(binary: string): string | null {
+  const [command, args] =
+    process.platform === 'win32'
+      ? ['where', [binary]]
+      : ['/usr/bin/env', ['which', binary]]
+
   try {
-    const found = execFileSync('/usr/bin/env', ['which', binary], {
+    const found = execFileSync(command, args, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim()
+    })
+      // `where` lists every match, one per line; the first is the one that wins.
+      .split(/\r?\n/)[0]
+      ?.trim()
     return found && isExecutable(found) ? found : null
   } catch {
     return null
@@ -127,7 +138,7 @@ function required(path: string | null, binary: string): string {
   if (!path) {
     throw new Error(
       `${binary} could not be found - it is neither bundled with this build nor on your PATH. ` +
-        'Install it (e.g. `brew install ffmpeg`) and restart GoonLib.',
+        `Install it (${ffmpegInstallHint(PLATFORM)}) and restart GoonLib.`,
     )
   }
   return path
