@@ -403,73 +403,6 @@ export function AiSections(props: AiSectionsProps): React.JSX.Element {
                 </div>
               </Field>
 
-              <div className="settings__group">
-                <label className="switch switch--compact">
-                  <input
-                    type="checkbox"
-                    checked={settings.autoSort}
-                    onChange={(event) => patch({ autoSort: event.target.checked })}
-                  />
-                  <span className="switch__text">
-                    <span className="switch__label">Sort into collections automatically</span>
-                    <span className="switch__hint">
-                      Adds each item to a collection named after its labels. Collections are just
-                      views - nothing on disk is moved or renamed.
-                    </span>
-                  </span>
-                </label>
-
-                {settings.autoSort ? (
-                  <Field
-                    label={`Confidence threshold - ${Math.round(settings.minConfidence * 100)}%`}
-                    hint="Labels below this are still recorded, but won't file anything."
-                  >
-                    <input
-                      type="range"
-                      className="settings__range"
-                      min={0}
-                      max={100}
-                      step={5}
-                      value={Math.round(settings.minConfidence * 100)}
-                      onChange={(event) =>
-                        patch({ minConfidence: Number(event.target.value) / 100 })
-                      }
-                    />
-                  </Field>
-                ) : null}
-
-                <label className="switch switch--compact">
-                  <input
-                    type="checkbox"
-                    checked={settings.captions}
-                    onChange={(event) => patch({ captions: event.target.checked })}
-                  />
-                  <span className="switch__text">
-                    <span className="switch__label">Write a description of each item</span>
-                    <span className="switch__hint">
-                      Asked for in the same request as the labels, so it costs tokens but not an
-                      extra call. Descriptions are added to the search index - you can then find
-                      things by what is in them, not just by filename.
-                    </span>
-                  </span>
-                </label>
-
-                <label className="switch switch--compact">
-                  <input
-                    type="checkbox"
-                    checked={settings.includeVideos}
-                    onChange={(event) => patch({ includeVideos: event.target.checked })}
-                  />
-                  <span className="switch__text">
-                    <span className="switch__label">Include videos</span>
-                    <span className="switch__hint">
-                      Videos are judged from their poster frame alone, so the labels are weaker
-                      than for images.
-                    </span>
-                  </span>
-                </label>
-              </div>
-
               <div className="settings__group settings__field">
                 <span className="settings__label">Classification</span>
                 <div className="settings__row settings__row--tight">
@@ -503,6 +436,74 @@ export function AiSections(props: AiSectionsProps): React.JSX.Element {
                   again against the new list.
                 </span>
               </div>
+
+              <div className="settings__group">
+                {settings.autoSort ? (
+                  <Field
+                    label={`Confidence threshold - ${Math.round(settings.minConfidence * 100)}%`}
+                    hint="Labels below this are still recorded, but won't file anything."
+                  >
+                    <input
+                      type="range"
+                      className="settings__range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={Math.round(settings.minConfidence * 100)}
+                      onChange={(event) =>
+                        patch({ minConfidence: Number(event.target.value) / 100 })
+                      }
+                    />
+                  </Field>
+                ) : null}
+
+                <label className="switch switch--compact">
+                  <input
+                    type="checkbox"
+                    checked={settings.autoSort}
+                    onChange={(event) => patch({ autoSort: event.target.checked })}
+                  />
+                  <span className="switch__text">
+                    <span className="switch__label">Sort into collections automatically</span>
+                    <span className="switch__hint">
+                      Adds each item to a collection named after its labels. Collections are just
+                      views - nothing on disk is moved or renamed.
+                    </span>
+                  </span>
+                </label>
+
+                <label className="switch switch--compact">
+                  <input
+                    type="checkbox"
+                    checked={settings.captions}
+                    onChange={(event) => patch({ captions: event.target.checked })}
+                  />
+                  <span className="switch__text">
+                    <span className="switch__label">Write a description of each item</span>
+                    <span className="switch__hint">
+                      Asked for in the same request as the labels, so it costs tokens but not an
+                      extra call. Descriptions are added to the search index - you can then find
+                      things by what is in them, not just by filename.
+                    </span>
+                  </span>
+                </label>
+
+                <label className="switch switch--compact">
+                  <input
+                    type="checkbox"
+                    checked={settings.includeVideos}
+                    onChange={(event) => patch({ includeVideos: event.target.checked })}
+                  />
+                  <span className="switch__text">
+                    <span className="switch__label">Include videos</span>
+                    <span className="switch__hint">
+                      Videos are judged from their poster frame alone, so the labels are weaker
+                      than for images.
+                    </span>
+                  </span>
+                </label>
+              </div>
+
             </TabPanel>
 
             <TabPanel id="duplicates" tab={tab}>
