@@ -136,3 +136,8 @@ confidence. Pushing a `v*` tag builds and attaches the results to a draft releas
 | `src/renderer` | React interface |
 | `src/shared` | The IPC contract, shared by all three |
 | `tests` | Vitest |
+
+## Licence
+
+MIT — see [LICENSE](LICENSE). Use it, change it, ship it; keep the copyright notice
+with it.
