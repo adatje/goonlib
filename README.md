@@ -139,5 +139,8 @@ confidence. Pushing a `v*` tag builds and attaches the results to a draft releas
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE). Use it, change it, ship it; keep the copyright notice
-with it.
+Apache 2.0 — see [LICENSE](LICENSE). Use it, change it, ship it, sell it. Keep the
+licence and the [NOTICE](NOTICE) with it, and say which files you changed.
+
+If you build something on this, a credit is appreciated beyond what the licence asks
+for — but it is a request, not a condition.

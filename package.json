@@ -3,7 +3,7 @@
   "version": "0.9.9",
   "private": true,
   "description": "Local-first desktop media library for images and video",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "@Adatje",
   "main": "./out/main/index.js",
   "scripts": {
