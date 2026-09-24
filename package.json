@@ -2,7 +2,7 @@
   "name": "goonlib",
   "version": "0.9.9",
   "private": true,
-  "description": "Desktop media library for images and video",
+  "description": "Local-first desktop media library for images and video",
   "author": "@Adatje",
   "main": "./out/main/index.js",
   "scripts": {
