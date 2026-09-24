@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { IMAGE_SECONDS, RESUME_AFTER } from '@shared/types'
 import type { PlaybackPrefs } from '@shared/types'
+import { Slider, Switch } from './SettingsControls'
 
 /**
  * Settings → App: how the app itself behaves, starting with the media player.
@@ -16,7 +17,7 @@ export function AppSettings(props: {
 
   return (
     <>
-      <div className="toy__section">
+      <div className="settings__section">
         <span className="settings__label">Media Player</span>
 
         <ImageSeconds
@@ -24,14 +25,14 @@ export function AppSettings(props: {
           onChange={(imageSeconds) => props.onPlaybackChange({ imageSeconds })}
         />
 
-        <Toggle
+        <Switch
           label="Play on open"
           hint="Toggles whether to play videos on open by default."
           checked={playback.playOnOpen}
           onChange={(playOnOpen) => props.onPlaybackChange({ playOnOpen })}
         />
 
-        <Toggle
+        <Switch
           label="Shuffle as default"
           hint="Globally enables shuffle=true as default when playing any media items."
           checked={playback.shuffleDefault}
@@ -39,14 +40,14 @@ export function AppSettings(props: {
         />
 
 
-        <Toggle
+        <Switch
           label="Show Meta data"
           hint="Shows the open item's details beside it in the media player: file, size, dates, and how often and how long it has been watched."
           checked={playback.showMetadata}
           onChange={(showMetadata) => props.onPlaybackChange({ showMetadata })}
         />
 
-        <Toggle
+        <Switch
           label="Show description"
           hint="Part of what the viewer's description button shows: the description itself."
           checked={playback.showCaption}
@@ -54,7 +55,7 @@ export function AppSettings(props: {
           onChange={(showCaption) => props.onPlaybackChange({ showCaption })}
         />
 
-        <Toggle
+        <Switch
           label="Show tags"
           hint="The other part: the item's tags, over the media."
           checked={playback.showTags}
@@ -62,14 +63,14 @@ export function AppSettings(props: {
           onChange={(showTags) => props.onPlaybackChange({ showTags })}
         />
 
-        <Toggle
+        <Switch
           label="Show EXIF data"
           hint="Shows a photo's EXIF data, if it has any: camera, lens, settings and the date it was taken."
           checked={playback.showExif}
           onChange={(showExif) => props.onPlaybackChange({ showExif })}
         />
 
-        <Toggle
+        <Switch
           label="Include Location"
           hint="Whether to also include location information in shown EXIF data"
           checked={playback.showLocation}
@@ -96,30 +97,39 @@ function WatchHistory(props: {
   const { playback } = props
 
   return (
-    <div className="settings__group toy__section">
+    <div className="settings__group settings__section">
       <span className="settings__label">Watch history</span>
 
-      <Toggle
+      <Switch
         label="Keep watch history"
         hint="Counts how often each item is opened and how long it is watched for."
         checked={playback.keepHistory}
         onChange={(keepHistory) => props.onPlaybackChange({ keepHistory })}
       />
 
-      <Toggle
+      <Switch
         label="Remember playback position"
         hint="Notes where a video was left and carries on from there next time. A video watched to the end starts fresh."
         checked={playback.resumePosition}
         onChange={(resumePosition) => props.onPlaybackChange({ resumePosition })}
       />
 
-      <ResumeAfter
+      {/* As a share of the video's length rather than a number of seconds: half a
+          minute is nothing in a film and most of a clip, and a library has
+          plenty of both. */}
+      <Slider
+        label="Remember after"
+        hint="How far into a video you must be before the place is kept. A video whose length is not known yet needs a minute."
+        min={RESUME_AFTER.min}
+        max={RESUME_AFTER.max}
+        step={5}
         value={playback.resumeAfterPercent}
         disabled={!playback.resumePosition}
+        format={(value) => (value === 0 ? 'Any point' : `${value}%`)}
         onChange={(resumeAfterPercent) => props.onPlaybackChange({ resumeAfterPercent })}
       />
 
-      <Toggle
+      <Switch
         label="Show Continue watching"
         hint="A row of part-watched videos above the library."
         checked={playback.showContinue}
@@ -129,74 +139,6 @@ function WatchHistory(props: {
 
       <ClearHistory onCleared={props.onChanged} />
     </div>
-  )
-}
-
-function Toggle(props: {
-  label: string
-  hint: string
-  checked: boolean
-  disabled?: boolean
-  onChange: (checked: boolean) => void
-}): React.JSX.Element {
-  return (
-    <label className="switch">
-      <input
-        type="checkbox"
-        checked={props.checked}
-        disabled={props.disabled}
-        onChange={(event) => props.onChange(event.target.checked)}
-      />
-      <span className="switch__text">
-        <span className="switch__label">{props.label}</span>
-        <span className="switch__hint">{props.hint}</span>
-      </span>
-    </label>
-  )
-}
-
-/**
- * How far into a video the place starts being kept, as a share of its length
- * rather than a number of seconds: half a minute is nothing in a film and most
- * of a clip, and a library has plenty of both.
- */
-function ResumeAfter(props: {
-  value: number
-  disabled: boolean
-  onChange: (percent: number) => void
-}): React.JSX.Element {
-  const [draft, setDraft] = useState<number | null>(null)
-  const shown = draft ?? props.value
-
-  return (
-    <label className="settings__field">
-      <span className="settings__row">
-        <span className="settings__label">Remember after</span>
-        <span className="toy__value">{shown === 0 ? 'Any point' : `${shown}%`}</span>
-      </span>
-      <input
-        type="range"
-        className="settings__range"
-        min={RESUME_AFTER.min}
-        max={RESUME_AFTER.max}
-        step={5}
-        value={shown}
-        disabled={props.disabled}
-        onChange={(event) => setDraft(Number(event.target.value))}
-        onPointerUp={() => {
-          if (draft !== null && draft !== props.value) props.onChange(draft)
-          setDraft(null)
-        }}
-        onKeyUp={() => {
-          if (draft !== null && draft !== props.value) props.onChange(draft)
-          setDraft(null)
-        }}
-      />
-      <span className="settings__hint">
-        How far into a video you must be before the place is kept. A video whose length is not known
-        yet needs a minute.
-      </span>
-    </label>
   )
 }
 

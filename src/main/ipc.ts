@@ -2,6 +2,7 @@ import { app, BrowserWindow, clipboard, dialog, ipcMain, shell, webContents } fr
 import { readdir } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import type { KeyBindings } from '@shared/keys'
+import { clampInt } from '@shared/num'
 import { IPC } from '@shared/types'
 import type { Theme, ThemeMode, ThemeType } from '@shared/theme'
 import type {
@@ -156,7 +157,7 @@ export function registerIpc(): void {
   handle(IPC.mediaList, (_event, query: MediaQuery): MediaPage =>
     listMedia({
       ...query,
-      limit: clamp(query.limit, 1, MAX_PAGE),
+      limit: clampInt(query.limit, 1, MAX_PAGE),
       offset: Math.max(0, Math.floor(query.offset)),
     }),
   )
@@ -698,11 +699,6 @@ async function resolveExistingPaths(
   }
 
   return resolved
-}
-
-function clamp(value: number, min: number, max: number): number {
-  if (!Number.isFinite(value)) return min
-  return Math.min(max, Math.max(min, Math.floor(value)))
 }
 
 function appInfo(): AppInfo {

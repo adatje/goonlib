@@ -6,8 +6,10 @@ import type {
   MediaLabel,
   PlaybackPrefs,
   Tag,
+  ToyPlayback,
 } from '@shared/types'
 import { formatBytes, formatDuration } from '../format'
+import { trace } from '../trace'
 import { AddToCollection } from './AddToCollection'
 import { ImageViewer } from './ImageViewer'
 import { MediaInfo } from './MediaInfo'
@@ -85,11 +87,17 @@ function hasTag(tags: Tag[], labels: MediaLabel[], tagId: number): boolean {
   return attachedTagIds(tags, labels).includes(tagId)
 }
 
+/** How often a playing video's place is written. See notePosition. */
+const POSITION_EVERY_MS = 5_000
+
 export function Lightbox(props: LightboxProps): React.JSX.Element {
   const { item, onClose, onNavigate } = props
   const playerRef = useRef<VideoPlayerHandle | null>(null)
   /** The open video's length, for deciding whether a position is worth keeping. */
   const durationRef = useRef(0)
+  /** The last place seen, and when one was last written. See notePosition. */
+  const placeRef = useRef<{ mediaId: number; positionMs: number } | null>(null)
+  const wroteAtRef = useRef(0)
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [labels, setLabels] = useState<MediaLabel[]>([])
   const [caption, setCaption] = useState<string | null>(null)
@@ -138,6 +146,35 @@ export function Lightbox(props: LightboxProps): React.JSX.Element {
   // autoplay and Play on open never disagree mid-run.
   const firstItem = useRef(item.id)
   const advance = useCallback(() => navigateRef.current(1), [])
+
+  /**
+   * Keeps the place in a playing video, every few seconds rather than every
+   * report.
+   *
+   * The player says where it is once a second, which the toy needs; the place
+   * does not - a resume that is a few seconds out is the same resume, and a
+   * write a second for the length of a film is a great deal of database for
+   * that. Stopping - pausing, seeking to the end, leaving - writes at once, so
+   * what is stored is never more than a moment old by the time it matters.
+   */
+  const notePosition = useCallback((report: ToyPlayback): void => {
+    const write = (): void => {
+      const place = placeRef.current
+      if (!place) return
+      window.goonlib.media.setPosition(place.mediaId, place.positionMs, durationRef.current)
+      placeRef.current = null
+      wroteAtRef.current = Date.now()
+    }
+
+    // The viewer has left the video: keep wherever it was last seen.
+    if (report.mediaId === null) {
+      write()
+      return
+    }
+
+    placeRef.current = { mediaId: report.mediaId, positionMs: report.positionMs }
+    if (!report.playing || Date.now() - wroteAtRef.current >= POSITION_EVERY_MS) write()
+  }, [])
   // Decided once per item, when it opens, and held: the player only reads it
   // as the video loads, and a redraw in between must not change its mind.
   const startFor = useRef<{ id: number; play: boolean } | null>(null)
@@ -647,16 +684,13 @@ export function Lightbox(props: LightboxProps): React.JSX.Element {
             // viewer's. Navigation already stops at the last item, so the run
             // ends there rather than wrapping around to the start.
             onEnded={() => {
-              console.log('[viewer] video ended; autoplay is', props.playback.autoplay)
+              trace('[viewer] video ended; autoplay is', props.playback.autoplay)
               if (props.playback.autoplay) advance()
             }}
             startAtMs={startAt}
             onReport={(report) => {
               window.goonlib.toy.playback(report)
-              // Noted as it plays, so a crash or a quit still leaves the place.
-              if (report.mediaId !== null && report.playing) {
-                window.goonlib.media.setPosition(report.mediaId, report.positionMs, durationRef.current)
-              }
+              notePosition(report)
             }}
             underControls={(clock) => {
               // The length is only known once the video has loaded, and a

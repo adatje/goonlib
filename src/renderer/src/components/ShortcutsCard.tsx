@@ -41,7 +41,7 @@ export function ShortcutsCard({ onClose }: { onClose: () => void }): React.JSX.E
 
         <div className="settings__body shortcuts__body">
           {groups.map((group) => (
-            <section key={group} className="shortcuts__group">
+            <section key={group}>
               <h3 className="mediainfo__title">{group}</h3>
               <dl className="shortcuts__list">
                 {KEY_ACTIONS.filter((action) => action.group === group).map((action) => (

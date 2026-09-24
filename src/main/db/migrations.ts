@@ -298,4 +298,13 @@ export const migrations: Migration[] = [
         WHERE position_ms IS NOT NULL;
     `,
   },
+  {
+    version: 11,
+    name: 'media-ext-index',
+    sql: /* sql */ `
+      -- Filters narrow by file type, and the Filters panel counts how many of
+      -- each there are. Both read this column and nothing indexed it.
+      CREATE INDEX IF NOT EXISTS idx_media_ext ON media(ext);
+    `,
+  },
 ]

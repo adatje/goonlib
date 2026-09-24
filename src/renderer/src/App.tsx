@@ -21,6 +21,7 @@ import { Lightbox } from './components/Lightbox'
 import { MediaGrid } from './components/MediaGrid'
 import { actionOf } from './keys'
 import { IS_WINDOWS, TRASH_NAME } from './platform'
+import { setClassifyingSound } from './sounds'
 import { ContinueRow } from './components/ContinueRow'
 import { ShortcutsCard } from './components/ShortcutsCard'
 import { NO_FILTERS } from './components/Filters'
@@ -259,6 +260,14 @@ export default function App(): React.JSX.Element {
   // Progress is pushed from the main process, so a download keeps reporting even
   // though the call that started it is still awaiting its final result.
   useEffect(() => window.goonlib.scrape.onProgress(setScrape), [])
+
+  // The sonar keeps sounding while the classifier works - the one stage of a
+  // scan slow enough to walk away from - and stops however it ends, this
+  // window included.
+  useEffect(() => {
+    setClassifyingSound(progress?.phase === 'classifying')
+    return () => setClassifyingSound(false)
+  }, [progress?.phase])
 
   // Live scan progress, with grid refreshes rate-limited so a fast scan doesn't
   // re-render the viewport dozens of times a second.

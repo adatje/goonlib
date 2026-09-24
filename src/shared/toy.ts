@@ -7,6 +7,8 @@
  * this file only ever turns a position into a level.
  */
 
+import { clamp01 } from './num'
+
 /** One point of a funscript: at `at` ms, the stroke is at `pos` (0 bottom, 100 top). */
 export interface StrokeAction {
   at: number
@@ -394,7 +396,3 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100
 }
 
-export function clamp01(value: number): number {
-  if (!Number.isFinite(value)) return 0
-  return Math.min(1, Math.max(0, value))
-}

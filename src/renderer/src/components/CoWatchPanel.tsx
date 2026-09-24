@@ -97,7 +97,7 @@ export function CoWatchSection({ cowatch }: CoWatchSectionProps): React.JSX.Elem
         ) : null}
 
         {!session.active ? (
-          <div className="cowatch__body">
+          <div>
             <span className="settings__label">Sessions</span>
 
             <div className="cowatch__start">
@@ -166,9 +166,9 @@ export function CoWatchSection({ cowatch }: CoWatchSectionProps): React.JSX.Elem
             </div>
           </div>
         ) : (
-          <div className="cowatch__body">
+          <div>
             {session.knocking.length > 0 ? (
-              <div className="cowatch__knocks">
+              <div>
                 {session.knocking.map((knock) => (
                   <Knock key={knock.id} knock={knock} cowatch={cowatch} />
                 ))}

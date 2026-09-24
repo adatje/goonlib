@@ -33,8 +33,8 @@ import type {
   ToyStatus,
 } from '@shared/types'
 import type { CustomPattern, PatternShape, ToyScript } from '@shared/toy'
+import { clamp01 } from '@shared/num'
 import {
-  clamp01,
   customIdOf,
   customPatternId,
   curveOf,

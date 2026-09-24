@@ -7,6 +7,8 @@ import type {
   ToyPlayback,
 } from '@shared/types'
 import { correct, isRunning, projectPosition } from '@shared/drift'
+import { clamp } from '@shared/num'
+import { trace } from '../trace'
 import { formatDuration } from '../format'
 
 export interface VideoPlayerHandle {
@@ -252,7 +254,7 @@ export function VideoPlayer({
           // Even muted was refused. Leave it on its first frame rather than
           // silently muting a video nobody managed to start.
           video.muted = initialVolume.current.muted
-          console.log('[player] autoplay refused for', item.id)
+          trace('[player] autoplay refused for', item.id)
         })
         // Cleared a turn later, after the volumechange events it caused.
         .finally(() => setTimeout(() => (autoMuting.current = false), 0))
@@ -283,7 +285,7 @@ export function VideoPlayer({
       // end — including the cases where Chromium never fired the event for it,
       // such as arriving there by seeking rather than by playing.
       if (video.ended) {
-        console.log('[player] found at the end without an ended event')
+        trace('[player] found at the end without an ended event')
         finish()
         return
       }
@@ -296,7 +298,7 @@ export function VideoPlayer({
       const stuck = video.currentTime === previous
       previous = video.currentTime
       if (stuck && total - video.currentTime <= END_SLACK_S) {
-        console.log('[player] stalled on the last frame at', video.currentTime, 'of', total)
+        trace('[player] stalled on the last frame at', video.currentTime, 'of', total)
         finish()
       }
     }, 400)
@@ -330,7 +332,7 @@ export function VideoPlayer({
   // Ask the main process for a playable rendition. Native files come back
   // instantly; a remux or transcode reports progress while it works.
   useEffect(() => {
-    console.log('[player] mount', item.id)
+    trace('[player] mount', item.id)
     let cancelled = false
 
     setStatus({ kind: 'preparing', percent: 0, message: 'Opening…' })
@@ -356,7 +358,7 @@ export function VideoPlayer({
       })
 
     return () => {
-      console.log('[player] unmount', item.id)
+      trace('[player] unmount', item.id)
       cancelled = true
       unsubscribe()
       // Abandon an encode the user navigated away from rather than burning CPU
@@ -628,25 +630,25 @@ export function VideoPlayer({
           stalled.current = false
           report()
         }}
-        onStalled={() => console.log('[player] stalled at', videoRef.current?.currentTime)}
-        onSuspend={() => console.log('[player] suspend at', videoRef.current?.currentTime)}
+        onStalled={() => trace('[player] stalled at', videoRef.current?.currentTime)}
+        onSuspend={() => trace('[player] suspend at', videoRef.current?.currentTime)}
         onWaiting={() => {
-          console.log('[player] waiting at', videoRef.current?.currentTime)
+          trace('[player] waiting at', videoRef.current?.currentTime)
           // Buffering here should stop the room, not leave everyone else ahead.
           reportReady(false)
           stalled.current = true
           report()
         }}
-        onEmptied={() => console.log('[player] emptied at', videoRef.current?.currentTime)}
-        onAbort={() => console.log('[player] abort at', videoRef.current?.currentTime)}
+        onEmptied={() => trace('[player] emptied at', videoRef.current?.currentTime)}
+        onAbort={() => trace('[player] abort at', videoRef.current?.currentTime)}
         onEnded={() => {
-          console.log('[player] ended at', videoRef.current?.currentTime)
+          trace('[player] ended at', videoRef.current?.currentTime)
           report()
           finish()
         }}
         onError={() => {
           const media = videoRef.current?.error
-          console.log('[player] error', media?.code, media?.message)
+          trace('[player] error', media?.code, media?.message)
           setStatus({
             kind: 'error',
             message: media?.message
@@ -731,7 +733,3 @@ export function VideoPlayer({
   )
 }
 
-function clamp(value: number, min: number, max: number): number {
-  if (!Number.isFinite(value)) return min
-  return Math.min(max, Math.max(min, value))
-}

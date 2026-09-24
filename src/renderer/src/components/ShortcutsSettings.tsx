@@ -57,7 +57,7 @@ export function ShortcutsSettings(): React.JSX.Element {
   const groups = [...new Set(KEY_ACTIONS.map((action) => action.group))]
 
   return (
-    <div className="toy__section">
+    <div className="settings__section">
       <div className="settings__row settings__row--tight">
         <button
           type="button"
@@ -73,7 +73,7 @@ export function ShortcutsSettings(): React.JSX.Element {
       </div>
 
       {groups.map((group) => (
-        <section key={group} className="settings__group shortcuts__group">
+        <section key={group} className="settings__group">
           <span className="settings__label">{group}</span>
           {KEY_ACTIONS.filter((action) => action.group === group).map((action) => (
             <div key={action.id} className="shortcuts__setting">

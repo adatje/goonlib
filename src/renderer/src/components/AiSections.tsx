@@ -7,6 +7,7 @@ import type {
   AiSettingsView,
   AiTestResult,
 } from '@shared/types'
+import { Slider, Switch } from './SettingsControls'
 import { CheckIcon, SearchIcon, WarningIcon } from './SidebarIcons'
 import { formatCount } from '../format'
 import { TabPanel } from './TabPanel'
@@ -205,21 +206,16 @@ export function AiSections(props: AiSectionsProps): React.JSX.Element {
       ) : null}
 
             <TabPanel id="providers" tab={tab}>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={settings.enabled}
-                  onChange={(event) => patch({ enabled: event.target.checked })}
-                />
-                <span className="switch__text">
-                  <span className="switch__label">Categorise with AI</span>
-                  <span className="switch__hint">
-                    {settings.provider === 'openai'
-                      ? 'Sends each media item\'s thumbnail to a classifier model during scans and receives back tag(s) for labelling.'
-                      : "Sends each item's thumbnail to Claude during a scan and records what comes back as labels. Off by default - it costs money per item."}
-                  </span>
-                </span>
-              </label>
+              <Switch
+                label="Categorise with AI"
+                hint={
+                  settings.provider === 'openai'
+                    ? "Sends each media item's thumbnail to a classifier model during scans and receives back tag(s) for labelling."
+                    : "Sends each item's thumbnail to Claude during a scan and records what comes back as labels. Off by default - it costs money per item."
+                }
+                checked={settings.enabled}
+                onChange={(enabled) => patch({ enabled })}
+              />
 
               {settings.enabled ? (
                 <div className="settings__group">
@@ -471,71 +467,43 @@ export function AiSections(props: AiSectionsProps): React.JSX.Element {
                 </span>
 
                 {settings.autoSort ? (
-                  <Field
-                    label={`Confidence threshold - ${Math.round(settings.minConfidence * 100)}%`}
+                  <Slider
+                    label="Confidence threshold"
                     hint="Labels below this are still recorded, but won't file anything."
-                  >
-                    <input
-                      type="range"
-                      className="settings__range"
-                      min={0}
-                      max={100}
-                      step={5}
-                      value={Math.round(settings.minConfidence * 100)}
-                      onChange={(event) =>
-                        patch({ minConfidence: Number(event.target.value) / 100 })
-                      }
-                    />
-                  </Field>
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={Math.round(settings.minConfidence * 100)}
+                    format={(value) => `${value}%`}
+                    onChange={(value) => patch({ minConfidence: value / 100 })}
+                  />
                 ) : null}
               </div>
 
               <div className="settings__group">
-                <label className="switch switch--compact">
-                  <input
-                    type="checkbox"
-                    checked={settings.autoSort}
-                    onChange={(event) => patch({ autoSort: event.target.checked })}
-                  />
-                  <span className="switch__text">
-                    <span className="switch__label">Sort into collections automatically</span>
-                    <span className="switch__hint">
-                      Adds each item to a collection named after its labels. Collections are just
-                      views - nothing on disk is moved or renamed.
-                    </span>
-                  </span>
-                </label>
+                <Switch
+                  compact
+                  label="Sort into collections automatically"
+                  hint="Adds each item to a collection named after its labels. Collections are just views - nothing on disk is moved or renamed."
+                  checked={settings.autoSort}
+                  onChange={(autoSort) => patch({ autoSort })}
+                />
 
-                <label className="switch switch--compact">
-                  <input
-                    type="checkbox"
-                    checked={settings.captions}
-                    onChange={(event) => patch({ captions: event.target.checked })}
-                  />
-                  <span className="switch__text">
-                    <span className="switch__label">Write a description of each item</span>
-                    <span className="switch__hint">
-                      Asked for in the same request as the labels, so it costs tokens but not an
-                      extra call. Descriptions are added to the search index - you can then find
-                      things by what is in them, not just by filename.
-                    </span>
-                  </span>
-                </label>
+                <Switch
+                  compact
+                  label="Write a description of each item"
+                  hint="Asked for in the same request as the labels, so it costs tokens but not an extra call. Descriptions are added to the search index - you can then find things by what is in them, not just by filename."
+                  checked={settings.captions}
+                  onChange={(captions) => patch({ captions })}
+                />
 
-                <label className="switch switch--compact">
-                  <input
-                    type="checkbox"
-                    checked={settings.includeVideos}
-                    onChange={(event) => patch({ includeVideos: event.target.checked })}
-                  />
-                  <span className="switch__text">
-                    <span className="switch__label">Include videos</span>
-                    <span className="switch__hint">
-                      Videos are judged from their poster frame alone, so the labels are weaker
-                      than for images.
-                    </span>
-                  </span>
-                </label>
+                <Switch
+                  compact
+                  label="Include videos"
+                  hint="Videos are judged from their poster frame alone, so the labels are weaker than for images."
+                  checked={settings.includeVideos}
+                  onChange={(includeVideos) => patch({ includeVideos })}
+                />
               </div>
 
             </TabPanel>

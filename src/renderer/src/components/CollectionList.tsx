@@ -43,7 +43,7 @@ export function CollectionList(props: CollectionListProps): React.JSX.Element {
       {shown.length === 0 && !creating ? (
         <p className="muted">{collections.length === 0 ? 'None yet.' : 'None of those here.'}</p>
       ) : (
-        <ul className="collection-list">
+        <ul className="collection-list collection-list--capped">
           {shown.map((collection) => (
             <li key={collection.id} className="collection">
               {editingId === collection.id ? (

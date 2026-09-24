@@ -392,7 +392,7 @@ export function PatternEditor({
       <label className="settings__field">
         <span className="settings__row">
           <span className="settings__label">Duration</span>
-          <span className="toy__value">{seconds.toFixed(1)}s</span>
+          <span className="settings__value">{seconds.toFixed(1)}s</span>
         </span>
         <input
           type="range"

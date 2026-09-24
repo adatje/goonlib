@@ -13,7 +13,8 @@
 
 import type { ToyManual, ToyPrefs } from '@shared/types'
 import type { PatternShape, StrokeAction, ToyScript } from '@shared/toy'
-import { actionIndexAt, clamp01, isPattern, levelAt, patternLevel, shapeLevel } from '@shared/toy'
+import { clamp01 } from '@shared/num'
+import { actionIndexAt, isPattern, levelAt, patternLevel, shapeLevel } from '@shared/toy'
 
 /**
  * The player's last report, and when it arrived.

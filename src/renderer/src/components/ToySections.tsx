@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { CustomPattern, PatternId } from '@shared/toy'
 import { customIdOf, customPatternId, TOY_PATTERNS } from '@shared/toy'
 import { PatternEditor } from './PatternEditor'
+import { Slider, Switch } from './SettingsControls'
 import type { PlaybackPrefs, ToyPrefs, ToyScriptState, ToyStatus } from '@shared/types'
 import type { CoWatchView } from '../state/useCoWatch'
 import type { ToyView } from '../state/useToy'
@@ -202,8 +203,15 @@ function Devices({ toy }: { toy: ToyView }): React.JSX.Element {
  * because it is also about how the toy feels rather than what drives it.
  */
 function Strength({ toy, prefs }: { toy: ToyView; prefs: ToyPrefs }): React.JSX.Element {
+  // The sliders are percentages; the toy is driven from 0 to 1. Kept stable so
+  // the slider's repeat does not restart on every render of this panel.
+  const previewToy = useCallback(
+    (value: number | null): void => window.goonlib.toy.preview(value === null ? null : value / 100),
+    [],
+  )
+
   return (
-    <div className="toy__section">
+    <div className="settings__section">
       <Switch
         label="Enable Preview"
         hint="Lets you preview the toy at the configured intensity"
@@ -214,7 +222,7 @@ function Strength({ toy, prefs }: { toy: ToyView; prefs: ToyPrefs }): React.JSX.
       <Slider
         label="Intensity"
         hint="The maximum intensity enabled for your toy"
-        preview={prefs.preview}
+        preview={prefs.preview ? previewToy : undefined}
         min={5}
         max={100}
         step={5}
@@ -227,7 +235,7 @@ function Strength({ toy, prefs }: { toy: ToyView; prefs: ToyPrefs }): React.JSX.
       <Slider
         label="Guest Intensity"
         hint="The maximum intensity allowed for guests"
-        preview={prefs.preview}
+        preview={prefs.preview ? previewToy : undefined}
         min={5}
         max={100}
         ceiling={Math.round(prefs.maxIntensity * 100)}
@@ -322,7 +330,7 @@ function Patterns({
   const run = (pattern: PatternId): void => toy.manual({ pattern, intensity: 1 })
 
   return (
-    <div className="toy__section">
+    <div className="settings__section">
       <div className="toy__patterns" role="group" aria-label="Pattern">
         {TOY_PATTERNS.map((pattern) => (
           <PatternChip
@@ -438,7 +446,7 @@ function Together({ toy, sharing }: { toy: ToyView; sharing: boolean }): React.J
   if (!prefs) return <></>
 
   return (
-    <div className="toy__section">
+    <div className="settings__section">
       <Switch
         label="Guest control"
         hint="Enables toy control for guests in 'Watch Together' sessions. Controls become visible to guests once enabled."
@@ -530,100 +538,3 @@ function PatternChip(props: {
   )
 }
 
-function Switch(props: {
-  label: string
-  hint?: string
-  checked: boolean
-  disabled?: boolean
-  onChange: (checked: boolean) => void
-}): React.JSX.Element {
-  return (
-    <label className="switch">
-      <input
-        type="checkbox"
-        checked={props.checked}
-        disabled={props.disabled}
-        onChange={(event) => props.onChange(event.target.checked)}
-      />
-      <span className="switch__text">
-        <span className="switch__label">{props.label}</span>
-        {props.hint ? <span className="switch__hint">{props.hint}</span> : null}
-      </span>
-    </label>
-  )
-}
-
-/**
- * A slider that stores on release, not on every pixel of the drag — each
- * change is a settings write in the main process — while still showing the
- * number as it moves.
- */
-function Slider(props: {
-  label: string
-  hint?: string
-  min: number
-  max: number
-  /** The highest it can be set to, when lower than the end of the bar. It stops there while dragging. */
-  ceiling?: number
-  /**
-   * Play the value on the toy while the slider is held, so an intensity can be
-   * felt rather than guessed at. Percentages, which is what these sliders are.
-   */
-  preview?: boolean
-  step: number
-  value: number
-  format: (value: number) => string
-  onChange: (value: number) => void
-}): React.JSX.Element {
-  const [draft, setDraft] = useState<number | null>(null)
-  const [previewing, setPreviewing] = useState(false)
-  const limit = (value: number): number => Math.min(value, props.ceiling ?? props.max)
-  const shown = draft ?? props.value
-  const commit = (): void => {
-    if (draft !== null && draft !== props.value) props.onChange(draft)
-    setDraft(null)
-    stopPreview()
-  }
-
-  const stopPreview = (): void => {
-    if (!previewing) return
-    setPreviewing(false)
-    window.goonlib.toy.preview(null)
-  }
-
-  // Held as long as the slider is, and said again every second: the main
-  // process drops a preview it stops hearing about, so a window that goes away
-  // mid-drag cannot leave the toy running.
-  useEffect(() => {
-    if (!previewing) return
-    const send = (): void => window.goonlib.toy.preview(shown / 100)
-    send()
-    const timer = setInterval(send, 1000)
-    return () => clearInterval(timer)
-  }, [previewing, shown])
-
-  return (
-    <label className="settings__field">
-      <span className="settings__row">
-        <span className="settings__label">{props.label}</span>
-        <span className="toy__value">{props.format(shown)}</span>
-      </span>
-      <input
-        type="range"
-        className="settings__range"
-        min={props.min}
-        max={props.max}
-        step={props.step}
-        value={shown}
-        onChange={(event) => setDraft(limit(Number(event.target.value)))}
-        onPointerDown={() => props.preview && setPreviewing(true)}
-        onKeyDown={() => props.preview && setPreviewing(true)}
-        onPointerUp={commit}
-        onKeyUp={commit}
-        onBlur={commit}
-        onPointerCancel={commit}
-      />
-      {props.hint ? <span className="settings__hint">{props.hint}</span> : null}
-    </label>
-  )
-}

@@ -23,7 +23,7 @@ export function BackupSettings(): React.JSX.Element {
   }
 
   return (
-    <div className="toy__section">
+    <div className="settings__section">
       <div className="settings__row settings__row--tight">
         <button
           type="button"

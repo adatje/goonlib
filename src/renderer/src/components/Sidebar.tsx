@@ -1,12 +1,12 @@
 import type { Collection, FolderLocation, LibraryStats, Root, Tag } from '@shared/types'
 import { formatCount } from '../format'
+import { playScanPing } from '../sounds'
 import markUrl from '../assets/mark.png'
 import markSound1 from '../assets/mark-1.mp3'
 import markSound2 from '../assets/mark-2.mp3'
 import markSound3 from '../assets/mark-3.mp3'
 import markSound4 from '../assets/mark-4.mp3'
 import markSound5 from '../assets/mark-5.mp3'
-import scanSound from '../assets/scan.mp3'
 import { CollectionList } from './CollectionList'
 import { FolderTree } from './FolderTree'
 import { DescriptionIcon, FolderIcon, LibraryIcon, ScanIcon, SourcesIcon } from './SidebarIcons'
@@ -202,11 +202,19 @@ export function Sidebar(props: SidebarProps): React.JSX.Element {
           type="button"
           className={props.scanning ? 'icon-button sidebar__rescan is-scanning' : 'icon-button sidebar__rescan'}
           onClick={() => {
-            playScan()
+            if (props.scanning) return
+            playScanPing()
             props.onRescan()
           }}
-          disabled={props.scanning}
-          title={props.scanning ? 'Scanning…' : 'Rescan: look for new, changed and removed files'}
+          // Not `disabled`: a disabled button shows no tooltip, and a scan
+          // already running is exactly when you want to hover and ask what the
+          // turning icon is.
+          aria-disabled={props.scanning}
+          title={
+            props.scanning
+              ? 'Scanning: looking for new, changed and removed files'
+              : 'Rescan: look for new, changed and removed files'
+          }
         >
           <ScanIcon />
           <span className="visually-hidden">{props.scanning ? 'Scanning' : 'Rescan'}</span>
@@ -256,16 +264,6 @@ function settingsTitle(props: SidebarProps): string {
   }
   if (props.toyLive) notes.push(props.toyStopped ? 'toy stopped' : 'toy connected')
   return notes.length > 0 ? `Settings - ${notes.join(', ')}` : 'Settings'
-}
-
-let scanAudio: HTMLAudioElement | null = null
-
-/** A sonar ping as Rescan starts looking. A second click restarts it rather than doubling it. */
-function playScan(): void {
-  scanAudio?.pause()
-  scanAudio = new Audio(scanSound)
-  scanAudio.volume = 0.7
-  void scanAudio.play().catch(() => undefined)
 }
 
 const MARK_SOUNDS = [markSound1, markSound2, markSound3, markSound4, markSound5]

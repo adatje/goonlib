@@ -266,6 +266,13 @@ body {
   list-style: none;
 }
 
+/* Collections and tags both scroll rather than pushing the sidebar down: a
+   library with a hundred of either must not bury the folders under them. */
+.collection-list--capped {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
 .collection {
   display: flex;
   align-items: center;
@@ -746,32 +753,6 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 28px;
-  flex-shrink: 0;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.icon-button:hover {
-  color: var(--text);
-  border-color: var(--accent);
-}
-
-.icon-button--on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-fg);
-}
-
 .segmented {
   display: flex;
   padding: 2px;
@@ -889,6 +870,7 @@ body {
   flex-direction: column;
   gap: 6px;
   margin: 0;
+  cursor: pointer;
 }
 
 .card__frame {
@@ -897,6 +879,9 @@ body {
   border-radius: 8px;
   background: var(--card-bg);
   overflow: hidden;
+  transition: outline-color 0.12s ease;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
 }
 
 .card__thumb {
@@ -984,16 +969,6 @@ body {
   aspect-ratio: 1;
   border-radius: 8px;
   background: var(--card-bg);
-}
-
-.card {
-  cursor: pointer;
-}
-
-.card__frame {
-  transition: outline-color 0.12s ease;
-  outline: 2px solid transparent;
-  outline-offset: 2px;
 }
 
 .card:hover .card__frame {
@@ -1347,6 +1322,7 @@ body {
 
 .icon-button:hover {
   background: var(--bg-hover);
+  border-color: var(--accent);
   color: var(--text);
 }
 
@@ -1371,43 +1347,6 @@ body {
   -webkit-app-region: no-drag;
 }
 
-.prompt__box {
-  width: 320px;
-  padding: 18px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg-raised);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
-}
-
-.prompt__title {
-  margin: 0 0 12px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.prompt__input {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--input-border);
-  border-radius: 8px;
-  background: var(--bg-sunken);
-  color: var(--input-fg);
-  font: inherit;
-}
-
-.prompt__input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.prompt__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 14px;
-}
-
 /* Duplicates --------------------------------------------------------------- */
 
 .dupes {
@@ -1425,6 +1364,8 @@ body {
   padding: var(--chrome-top) 20px 12px;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
+  flex-wrap: wrap;
+  row-gap: 8px;
   -webkit-app-region: drag;
 }
 
@@ -1667,13 +1608,6 @@ body {
 
 /* Settings ----------------------------------------------------------------- */
 
-.sidebar__settings {
-  margin-left: auto;
-  /* The brand row is a window drag handle, so the button has to opt back out or
-     the click is swallowed by the titlebar. */
-  -webkit-app-region: no-drag;
-}
-
 .settings {
   display: flex;
   flex-direction: column;
@@ -1719,6 +1653,21 @@ body {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
+}
+
+/* One run of settings under a heading. */
+.settings__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* The number a slider is showing, at the right of its label. */
+.settings__value {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .settings__field {
@@ -1895,11 +1844,6 @@ body {
 
 /* Tags --------------------------------------------------------------------- */
 
-.collection-list--capped {
-  max-height: 220px;
-  overflow-y: auto;
-}
-
 .tag__ai {
   margin-left: 6px;
   padding: 0 4px;
@@ -2013,13 +1957,6 @@ body {
   background: var(--list-hover);
 }
 
-.sidebar__twist {
-  flex-shrink: 0;
-  width: 9px;
-  font-size: 8px;
-  line-height: 1;
-}
-
 .sidebar__title {
   flex: 1;
   min-width: 0;
@@ -2048,25 +1985,6 @@ body {
 .button--danger:hover:not(:disabled) {
   border-color: var(--danger);
   background: color-mix(in srgb, var(--danger) 12%, var(--bg-hover));
-}
-
-/* Sharing must never be running invisibly, so the button stays lit for the
-   whole session rather than only while the panel is open. */
-.sidebar__cowatch {
-  position: relative;
-  margin-left: auto;
-  /* The brand row is a window drag handle, so the button has to opt back out or
-     the click is swallowed by the titlebar. Same reason as the gear beside it. */
-  -webkit-app-region: no-drag;
-}
-
-.sidebar__cowatch.is-on {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-}
-
-.sidebar__settings {
-  margin-left: 6px;
 }
 
 .sidebar__badge {
@@ -2159,46 +2077,6 @@ body {
 
 .cowatch__dot--off {
   background: var(--text-muted);
-}
-
-.cowatch__chat {
-  max-height: 170px;
-  overflow-y: auto;
-  margin-bottom: 8px;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-sunken);
-}
-
-.cowatch__msg {
-  margin: 0 0 5px;
-  font-size: 13px;
-}
-
-.cowatch__msg b {
-  color: var(--accent);
-}
-
-.cowatch__reacts {
-  display: flex;
-  gap: 4px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-
-.cowatch__react {
-  padding: 5px 9px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-hover);
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.cowatch__react:hover {
-  border-color: var(--accent);
 }
 
 /* A held room has to explain itself: a video that simply refuses to start is
@@ -2678,28 +2556,6 @@ body {
 
 /* Toy ---------------------------------------------------------------------- */
 
-/* Leads the brand row's buttons, so it takes the push to the right that the
-   co-watch button used to. */
-.sidebar__toy {
-  margin-left: auto;
-  -webkit-app-region: no-drag;
-}
-
-.sidebar__toy + .sidebar__cowatch {
-  margin-left: 6px;
-}
-
-/* Connected is never invisible: lit for as long as a toy is attached. */
-.sidebar__toy.is-on {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-}
-
-.sidebar__toy.is-stopped {
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 14%, transparent);
-}
-
 .toy .player__progress {
   width: 100%;
 }
@@ -2774,13 +2630,6 @@ body {
 .toy__patterns .cowatch__provider:disabled {
   opacity: 0.45;
   cursor: default;
-}
-
-.toy__value {
-  margin-left: auto;
-  font-size: 12px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .toy__foot {
@@ -3132,23 +2981,11 @@ body {
   border-top: 0;
 }
 
-/* One height for every tab, so switching does not make the sheet jump. The
-   body scrolls instead when a tab has more than fits. */
-.settings--tabbed {
-  height: min(640px, calc(100vh - 60px));
-}
-
 /* Sits between the header and the tabs, so it stays put whichever tab is open. */
 .toy > .toy__stop {
   margin: 0;
   padding: 12px 18px;
   border-bottom: 1px solid var(--border);
-}
-
-.toy__section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
 
 /* Random's right-click choice: three short options need no more room. */
@@ -3169,27 +3006,6 @@ body {
   font: inherit;
   text-decoration: underline;
   cursor: pointer;
-}
-
-/* The toy, watch-together and settings buttons, on their own row beneath the
-   name. The row as a whole opts out of the titlebar drag, so the gaps between
-   buttons do not start a window drag by accident. */
-.sidebar__brand {
-  flex-wrap: wrap;
-  row-gap: 10px;
-}
-
-.sidebar__actions {
-  display: flex;
-  flex-basis: 100%;
-  gap: 6px;
-  -webkit-app-region: no-drag;
-}
-
-.sidebar__actions .sidebar__toy,
-.sidebar__actions .sidebar__cowatch,
-.sidebar__actions .sidebar__settings {
-  margin-left: 0;
 }
 
 /* Settings sheet ----------------------------------------------------------- */
@@ -3300,9 +3116,9 @@ body {
   border-top: 1px solid var(--border);
 }
 
+/* Relative, so the knocking badge is positioned against the gear. */
 .sidebar__foot > .sidebar__settings {
   position: relative;
-  margin-left: auto;
 }
 
 /* The mark is clickable, so it opts out of the title bar drag around it. */
@@ -3855,11 +3671,6 @@ button.styling__reset:hover {
   color: var(--text);
 }
 
-.dupes__bar {
-  flex-wrap: wrap;
-  row-gap: 8px;
-}
-
 /*
  * A selected row keeps its tint under the pointer, a touch deeper, rather than
  * falling back to the plain hover. Written out per row, since each row's own
@@ -3892,7 +3703,7 @@ button.styling__reset:hover {
 }
 
 /* The footer's Rescan, left, opposite Settings; it turns while a scan runs. */
-.sidebar__rescan:disabled {
+.sidebar__rescan[aria-disabled='true'] {
   opacity: 1;
   cursor: default;
 }
@@ -4154,6 +3965,8 @@ button.styling__reset:hover {
 
 .toolbar .toychip__more {
   padding: 6px 8px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   color: var(--text-muted);
   font-size: 10px;
 }
@@ -4161,11 +3974,6 @@ button.styling__reset:hover {
 .toolbar .toychip {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
-}
-
-.toolbar .toychip__more {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
 }
 
 .toolbar .toychip:hover,
@@ -4464,8 +4272,4 @@ button.styling__reset:hover {
 .sidebar__help {
   margin-left: auto;
   margin-right: 4px;
-}
-
-.sidebar__foot > .sidebar__settings {
-  margin-left: 0;
 }
