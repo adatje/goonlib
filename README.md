@@ -1,8 +1,25 @@
+<div align="center">
+
+<img src="build/icon.png" width="128" alt="GoonLib">
+
 # GoonLib
 
-Point it at the folders you already have. It reads them where they sit, works out what
-is in them, and leaves them alone — nothing is copied, renamed or moved unless you ask,
-and nothing ever leaves the machine.
+**A local-first media library for images and video.**
+
+Point it at the folders you already have. It reads them where they sit, works out
+what is in them, and leaves them alone — nothing is copied, renamed or moved unless
+you ask, and nothing ever leaves the machine.
+
+![Licence](https://img.shields.io/badge/licence-Apache%202.0-ff5c8a?style=flat-square)
+![Platforms](https://img.shields.io/badge/macOS%20·%20Windows%20·%20Linux-ff5c8a?style=flat-square)
+![Electron](https://img.shields.io/badge/Electron-2b2e3a?style=flat-square&logo=electron)
+![React](https://img.shields.io/badge/React-2b2e3a?style=flat-square&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-2b2e3a?style=flat-square&logo=typescript)
+![SQLite](https://img.shields.io/badge/SQLite-2b2e3a?style=flat-square&logo=sqlite)
+
+</div>
+
+---
 
 ## What it does
 
@@ -25,6 +42,8 @@ and nothing ever leaves the machine.
 - **Watches with someone.** See below.
 - **Drives a toy.** See below.
 
+---
+
 ## Getting it
 
 Downloads are on the [releases page](../../releases): a `.dmg` for macOS on Apple Silicon
@@ -33,6 +52,8 @@ or Intel, an installer for Windows, and an AppImage for Linux.
 Nothing is signed yet, so the first launch needs a click past the warning — on macOS,
 right-click the app and choose Open; on Windows, More info then Run anyway. After that it
 opens normally.
+
+---
 
 ## Watching together
 
@@ -68,6 +89,8 @@ winget install --id Cloudflare.cloudflared    # Windows
 `cloudflared` quick tunnels need no account. `ngrok` works too. Neither is bundled —
 GoonLib runs whichever it finds and stops it when the session ends.
 
+---
+
 ## Toys
 
 Connect a toy from the wave button at the top of the sidebar. It works over Bluetooth
@@ -95,6 +118,8 @@ the toy too.
 On macOS, GoonLib needs Bluetooth permission (System Settings → Privacy & Security →
 Bluetooth). On Linux it goes through BlueZ, so the `bluetooth` service has to be running.
 Windows needs nothing.
+
+---
 
 ## Known gaps
 
