@@ -104,6 +104,19 @@
   box-sizing: border-box;
 }
 
+/*
+ * An icon inside a button is decoration, never the hit target.
+ *
+ * Chromium resolves a tooltip from the element under the pointer, and for SVG
+ * content it looks for an SVG <title> child rather than falling back to the
+ * HTML `title` on an ancestor. An icon-only button is entirely covered by its
+ * own svg, so it swallowed its own tooltip - the gear and the rescan button in
+ * the sidebar footer had titles all along and never showed them.
+ */
+button svg {
+  pointer-events: none;
+}
+
 html,
 body,
 #root {
@@ -829,6 +842,18 @@ body {
   border-bottom: 1px solid var(--border);
   background: var(--bg-raised);
   font-size: 13px;
+}
+
+/* The moment after a scan finishes, before the bar goes. */
+.scanbar--done .scanbar__label {
+  color: var(--text);
+}
+
+.scanbar__tick {
+  flex-shrink: 0;
+  color: var(--success);
+  font-size: 13px;
+  line-height: 1;
 }
 
 .scanbar--error {

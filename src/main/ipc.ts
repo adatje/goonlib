@@ -543,7 +543,8 @@ handle(IPC.collectionsTags, (_event, id: number): number[] => collectionTags(Num
 
   handle(IPC.aiReclassify, (_event, all: boolean): number => {
     const queued = queueForClassification(all)
-    if (queued > 0) indexer.start()
+    // The one path that does classify, because it is the one the user asked for.
+    if (queued > 0) indexer.start(undefined, { classify: true })
     return queued
   })
 
@@ -564,7 +565,12 @@ handle(IPC.collectionsTags, (_event, id: number): number[] => collectionTags(Num
   handle(IPC.scrapeCancel, (): void => scraper.cancel())
   handle(IPC.scrapeStatus, (): ScrapeProgress => scraper.status())
 
-  handle(IPC.scanStart, (_event, rootId?: number): void => indexer.start(rootId))
+  // Scanning and classifying are separate jobs with separate buttons. A scan
+  // looks at the disk; the classifier is a model that may not even be running,
+  // and asking for one should never quietly start the other.
+  handle(IPC.scanStart, (_event, rootId?: number): void =>
+    indexer.start(rootId, { classify: false }),
+  )
   handle(IPC.scanCancel, (): void => indexer.cancel())
   handle(IPC.scanStatus, (): ScanProgress => indexer.status())
 

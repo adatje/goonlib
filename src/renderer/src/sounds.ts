@@ -1,10 +1,9 @@
 /**
  * The sonar, and who is allowed to sound it.
  *
- * One ping when a scan is asked for, and the same ping over and over while the
- * classifier is working, which is the part of a scan long enough to wander off
- * from. One element either way: two sonars at once is a submarine film, not a
- * media library.
+ * One ping when a scan is asked for, and the same ping over and over while one
+ * is running. One element either way: two sonars at once is a submarine film,
+ * not a media library.
  */
 
 import scanSound from './assets/scan.mp3'
@@ -18,10 +17,10 @@ const VOLUME = 0.4
 /**
  * How long the loop may sound for, however long the classifier takes.
  *
- * Classifying a large library is a job measured in hours, and a sonar that
- * kept pace with it would be a punishment rather than a signal. Half a minute
- * is enough to say "this has started and is still going"; after that the work
- * carries on in silence, with the bar still saying so.
+ * A scan of a large library is a job measured in minutes or hours, and a sonar
+ * that kept pace with it would be a punishment rather than a signal. Half a
+ * minute is enough to say "this has started and is still going"; after that the
+ * work carries on in silence, with the bar still saying so.
  */
 const MAX_MS = 30_000
 
@@ -59,7 +58,7 @@ export function playScanPing(): void {
  * ends - whether it finished, was stopped, or failed. A later run starts the
  * half minute again.
  */
-export function setClassifyingSound(on: boolean): void {
+export function setScanSound(on: boolean): void {
   if (on === classifying) return
   classifying = on
 
