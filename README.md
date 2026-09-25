@@ -112,6 +112,7 @@ For both Lovense *(full, incl. multi-engine 'stroker+vibrator' support)* and gen
 ℹ️ AI Notice(s):
 - All AI features are opt-in
 - All AI features are local-first
+- All AI Tags & Collections are marked and filterable
 - No AI features are required.
 
 ---

@@ -52,6 +52,10 @@ export function StorageCard(props: {
   // with what is taking it up means having both open at once.
   const [openWhere, setOpenWhere] = useState(false)
   const [openType, setOpenType] = useState(false)
+  // What the pointer is over, as a *slice* key rather than a row key, so the
+  // ring and the list can be lit from either side with one value.
+  const [lit, setLit] = useState<string | null>(null)
+  const [litKind, setLitKind] = useState<string | null>(null)
 
   const here = trail[trail.length - 1] ?? null
 
@@ -185,7 +189,7 @@ export function StorageCard(props: {
             </nav>
           ) : null}
 
-          <Donut rows={rows} />
+          <Donut rows={rows} lit={lit} onLight={setLit} />
 
           <Section
             title={here === null ? 'By source' : 'Folders'}
@@ -205,6 +209,8 @@ export function StorageCard(props: {
                   items={row.items}
                   bytes={row.bytes}
                   onOpen={row.into ? () => setTrail([...trail, row.into!]) : undefined}
+                  lit={sliceKey(rows, index) === lit}
+                  onLight={(on) => setLit(on ? sliceKey(rows, index) : null)}
                 />
               ))
             )}
@@ -216,13 +222,17 @@ export function StorageCard(props: {
             open={openType}
             onToggle={() => setOpenType(!openType)}
           >
-            <div className="storecard__bar">
+            <div className={litKind ? 'storecard__bar storecard__bar--lit' : 'storecard__bar'}>
               {data.kinds.map((kind, index) => (
                 <span
                   key={kind.kind}
-                  className="storecard__seg"
+                  className={
+                    litKind === kind.kind ? 'storecard__seg storecard__seg--lit' : 'storecard__seg'
+                  }
                   style={{ background: tint(index), flexGrow: Math.max(kind.bytes, 1) }}
                   title={`${KIND_NAME[kind.kind]}: ${formatBytes(kind.bytes)}`}
+                  onMouseEnter={() => setLitKind(kind.kind)}
+                  onMouseLeave={() => setLitKind(null)}
                 />
               ))}
             </div>
@@ -234,6 +244,8 @@ export function StorageCard(props: {
                   items={kind.items}
                   bytes={kind.bytes}
                   head
+                  lit={litKind === kind.kind}
+                  onLight={(on) => setLitKind(on ? kind.kind : null)}
                 />
                 {kind.exts.map((ext) => (
                   <Row
@@ -242,6 +254,10 @@ export function StorageCard(props: {
                     items={ext.items}
                     bytes={ext.bytes}
                     indent
+                    // An extension belongs to its kind, so pointing at one
+                    // lights the same segment its heading does.
+                    lit={litKind === kind.kind}
+                    onLight={(on) => setLitKind(on ? kind.kind : null)}
                   />
                 ))}
               </div>
@@ -305,11 +321,26 @@ function Row(props: {
   muted?: boolean
   /** Set when there is a level below this one to step into. */
   onOpen?: () => void
+  /** The chart is pointing back at this row. */
+  lit?: boolean
+  onLight?: (on: boolean) => void
 }): React.JSX.Element {
   const classes = ['storecard__row']
   if (props.head) classes.push('storecard__row--head')
   if (props.indent) classes.push('storecard__row--child')
   if (props.onOpen) classes.push('storecard__row--able')
+  if (props.lit) classes.push('storecard__row--lit')
+
+  // Focus counts as pointing at it, so tabbing through the openable rows
+  // lights the chart the same way the mouse does.
+  const linking = props.onLight
+    ? {
+        onMouseEnter: () => props.onLight?.(true),
+        onMouseLeave: () => props.onLight?.(false),
+        onFocus: () => props.onLight?.(true),
+        onBlur: () => props.onLight?.(false),
+      }
+    : {}
 
   const inside = (
     <>
@@ -328,13 +359,36 @@ function Row(props: {
   )
 
   return props.onOpen ? (
-    <button type="button" className={classes.join(' ')} onClick={props.onOpen} title={`Open ${props.name}`}>
+    <button
+      type="button"
+      className={classes.join(' ')}
+      onClick={props.onOpen}
+      title={`Open ${props.name}`}
+      {...linking}
+    >
       {inside}
     </button>
   ) : (
-    <div className={classes.join(' ')}>{inside}</div>
+    <div className={classes.join(' ')} {...linking}>
+      {inside}
+    </div>
   )
 }
+
+/**
+ * Which slice a row is drawn as.
+ *
+ * Only the first few rows get an arc of their own; everything after them is
+ * folded into the grey remainder, so those rows all point at the same slice -
+ * and pointing at that slice lights all of them back. That is the honest
+ * answer: they really are one wedge.
+ */
+function sliceKey(rows: Array<{ key: string }>, index: number): string {
+  return index < PALETTE.length ? (rows[index]?.key ?? REST_KEY) : REST_KEY
+}
+
+/** The one slice that stands for everything past the palette. */
+const REST_KEY = 'rest'
 
 /**
  * The slices, as arcs of one ring.
@@ -343,20 +397,46 @@ function Row(props: {
  * every slice is then the same element with two numbers changed, and the ring
  * keeps its exact thickness whatever the split turns out to be.
  */
-function Donut({ rows }: { rows: Array<{ key: string; bytes: number }> }): React.JSX.Element {
+function Donut({
+  rows,
+  lit,
+  onLight,
+}: {
+  rows: Array<{ key: string; label: string; bytes: number }>
+  lit: string | null
+  onLight: (key: string | null) => void
+}): React.JSX.Element {
   // Everything past the palette becomes one grey slice. Twenty-six named
   // wedges is confetti; the tail is one honest "and the rest", and the list
   // below still carries every row with that same grey against it.
-  const named = rows.slice(0, PALETTE.length).map((row, index) => ({ key: row.key, value: row.bytes, index }))
-  const rest = rows.slice(PALETTE.length).reduce((sum, row) => sum + row.bytes, 0)
-  const slices = rest > 0 ? [...named, { key: 'rest', value: rest, index: PALETTE.length }] : named
+  const tail = rows.slice(PALETTE.length)
+  const slices = [
+    ...rows.slice(0, PALETTE.length).map((row, index) => ({
+      key: row.key,
+      label: row.label,
+      value: row.bytes,
+      index,
+    })),
+    ...(tail.length > 0
+      ? [
+          {
+            key: REST_KEY,
+            label: tail.length === 1 ? tail[0]!.label : `${tail.length} more`,
+            value: tail.reduce((sum, row) => sum + row.bytes, 0),
+            index: PALETTE.length,
+          },
+        ]
+      : []),
+  ]
 
   const total = slices.reduce((sum, slice) => sum + slice.value, 0)
   const circumference = 2 * Math.PI * RADIUS
   let offset = 0
 
+  const shown = slices.find((slice) => slice.key === lit) ?? null
+
   return (
-    <div className="storecard__donut">
+    <div className="storecard__donut" onMouseLeave={() => onLight(null)}>
       <svg viewBox={`0 0 ${SIZE} ${SIZE}`} width={SIZE} height={SIZE} aria-hidden="true">
         {/* The track, so a nearly-empty ring still reads as a ring. Every
             colour here is set through `style` rather than the `stroke`
@@ -376,6 +456,11 @@ function Donut({ rows }: { rows: Array<{ key: string; bytes: number }> }): React
           const element = (
             <circle
               key={slice.key}
+              className={
+                lit !== null && lit !== slice.key
+                  ? 'storecard__slice storecard__slice--dim'
+                  : 'storecard__slice'
+              }
               cx={SIZE / 2}
               cy={SIZE / 2}
               r={RADIUS}
@@ -387,12 +472,26 @@ function Donut({ rows }: { rows: Array<{ key: string; bytes: number }> }): React
               // Starts the ring at twelve o'clock, which is where a reader
               // expects the biggest slice to begin.
               transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
+              onMouseEnter={() => onLight(slice.key)}
             />
           )
           offset += length
           return element
         })}
       </svg>
+
+      {/* The hole in the middle is where the name goes. Empty at rest, because
+          the total is already in the heading two lines above it. */}
+      {shown ? (
+        <span className="storecard__hub">
+          <span className="storecard__hub-name" title={shown.label}>
+            {shown.label}
+          </span>
+          <span className="storecard__hub-share">
+            {total > 0 ? Math.round((shown.value / total) * 100) : 0}%
+          </span>
+        </span>
+      ) : null}
     </div>
   )
 }

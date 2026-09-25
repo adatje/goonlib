@@ -4747,9 +4747,54 @@ button.styling__reset:hover {
 }
 
 .storecard__donut {
+  position: relative;
   display: flex;
   justify-content: center;
   padding: 4px 0 8px;
+}
+
+/*
+ * Pointing at one part of the card lights it everywhere it appears: the ring
+ * answers the list and the list answers the ring. Everything else steps back
+ * rather than the lit one leaping forward, which keeps the ring the same size
+ * and the card still.
+ */
+.storecard__slice {
+  transition: opacity 0.12s ease;
+  cursor: pointer;
+}
+
+.storecard__slice--dim {
+  opacity: 0.28;
+}
+
+/* The name of whatever is lit, in the hole the ring leaves. */
+.storecard__hub {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 78px;
+  transform: translate(-50%, -60%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.storecard__hub-name {
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.storecard__hub-share {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 .storecard__list {
@@ -4861,6 +4906,11 @@ button.styling__reset:hover {
   cursor: pointer;
 }
 
+/* Lit from either side: pointing at the row, or at the slice it is drawn as. */
+.storecard__row--lit {
+  background: var(--list-hover);
+}
+
 .storecard__row--able:hover {
   background: var(--list-hover);
 }
@@ -4938,6 +4988,17 @@ button.styling__reset:hover {
 .storecard__seg {
   flex-basis: 0;
   min-width: 3px;
+  transition: opacity 0.12s ease;
+  cursor: pointer;
+}
+
+/* Same idea as the ring: the others step back rather than one jumping out. */
+.storecard__bar--lit .storecard__seg {
+  opacity: 0.28;
+}
+
+.storecard__bar--lit .storecard__seg--lit {
+  opacity: 1;
 }
 
 /* The disc between the two numbers, which opens the card. */
