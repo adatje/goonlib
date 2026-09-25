@@ -47,19 +47,19 @@ jobs:
             # Both Apple Silicon and Intel, as electron-builder.yml asks for.
             artifacts: |
               release/*.dmg
-              release/*.yml
+              release/latest*.yml
               release/*.blockmap
           - os: windows-latest
             name: Windows
             artifacts: |
               release/*.exe
-              release/*.yml
+              release/latest*.yml
               release/*.blockmap
           - os: ubuntu-latest
             name: Linux
             artifacts: |
               release/*.AppImage
-              release/*.yml
+              release/latest*.yml
               release/*.blockmap
 
     steps:
@@ -111,8 +111,11 @@ jobs:
           # A draft, so the notes can be written before anyone sees it.
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
             || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --title "GoonLib ${TAG#v}" --generate-notes
-          # The yml manifests and blockmaps are what the updater reads; without
-          # them a published release is invisible to every installed copy.
+          # The latest*.yml manifests and blockmaps are what the updater reads;
+          # without them a published release is invisible to every installed copy.
+          # Only latest*.yml: every platform also writes a builder-debug.yml, and
+          # three files of one name in one upload is a 422 that --clobber cannot
+          # help with, because the name it would clobber is not on the release yet.
           find artifacts -type f \( -name '*.dmg' -o -name '*.exe' -o -name '*.AppImage' \
-            -o -name '*.yml' -o -name '*.blockmap' \) \
+            -o -name 'latest*.yml' -o -name '*.blockmap' \) \
             -exec gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber {} +
