@@ -4,6 +4,7 @@ import { basename, dirname, join } from 'node:path'
 import type { KeyBindings } from '@shared/keys'
 import { clampInt } from '@shared/num'
 import { IPC } from '@shared/types'
+import { updates } from './updates'
 import type { Theme, ThemeMode, ThemeType } from '@shared/theme'
 import type {
   AiSettings,
@@ -114,13 +115,18 @@ import {
 } from './db/views'
 import { themes } from './theme'
 import { trashHistory } from './trash'
-import type { TrashUndoResult } from '@shared/types'
+import type { TrashUndoResult, UpdateState } from '@shared/types'
 
 /** Largest page the renderer may ask for, so a bad query can't pull the whole library. */
 const MAX_PAGE = 500
 
 export function registerIpc(): void {
   handle(IPC.appInfo, (): AppInfo => appInfo())
+
+  handle(IPC.updatesStatus, (): UpdateState => updates.current())
+  handle(IPC.updatesCheck, (): Promise<UpdateState> => updates.check())
+  handle(IPC.updatesDownload, (): Promise<UpdateState> => updates.download())
+  ipcMain.on(IPC.updatesInstall, () => updates.install())
 
   handle(IPC.rootsList, (): Root[] => listRoots())
 

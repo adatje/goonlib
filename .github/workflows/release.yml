@@ -45,13 +45,22 @@ jobs:
           - os: macos-latest
             name: macOS
             # Both Apple Silicon and Intel, as electron-builder.yml asks for.
-            artifacts: release/*.dmg
+            artifacts: |
+              release/*.dmg
+              release/*.yml
+              release/*.blockmap
           - os: windows-latest
             name: Windows
-            artifacts: release/*.exe
+            artifacts: |
+              release/*.exe
+              release/*.yml
+              release/*.blockmap
           - os: ubuntu-latest
             name: Linux
-            artifacts: release/*.AppImage
+            artifacts: |
+              release/*.AppImage
+              release/*.yml
+              release/*.blockmap
 
     steps:
       - uses: actions/checkout@v4
@@ -102,5 +111,8 @@ jobs:
           # A draft, so the notes can be written before anyone sees it.
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
             || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --title "GoonLib ${TAG#v}" --generate-notes
-          find artifacts -type f \( -name '*.dmg' -o -name '*.exe' -o -name '*.AppImage' \) \
+          # The yml manifests and blockmaps are what the updater reads; without
+          # them a published release is invisible to every installed copy.
+          find artifacts -type f \( -name '*.dmg' -o -name '*.exe' -o -name '*.AppImage' \
+            -o -name '*.yml' -o -name '*.blockmap' \) \
             -exec gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber {} +

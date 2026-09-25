@@ -5,10 +5,12 @@ import { ensureCacheDirs } from './cache'
 import { cowatch } from './cowatch'
 import { closeDb, initDb } from './db'
 import { registerIpc } from './ipc'
+import { playbackPrefs } from './db/settings'
 import { installAppMenu } from './menu'
 import { MEDIA_SCHEME, registerMediaProtocol, registerMediaScheme } from './protocol'
 import { indexer } from './scan/indexer'
 import { themes } from './theme'
+import { updates } from './updates'
 import { toys } from './toy'
 
 // Privileged schemes must be declared before the app is ready, so this runs at
@@ -193,6 +195,7 @@ app.whenReady().then(async () => {
   // competes with first paint.
   window.webContents.once('did-finish-load', () => {
     setTimeout(() => indexer.start(), 1200)
+    updates.start(window, playbackPrefs().autoUpdate)
     // Only when asked for: connecting starts a Bluetooth scan, which is not
     // something to do unprompted on every launch.
     void toys.autoConnect()

@@ -62,5 +62,14 @@ linux:
   target:
     - AppImage
 
+# Where the app looks for a newer version of itself. The repository is public, so
+# the updater reads it over plain HTTPS with no token compiled in. This also makes
+# each build write the latest*.yml manifests the updater needs; the release
+# workflow attaches them alongside the installers.
+publish:
+  provider: github
+  owner: adatje
+  repo: goonlib
+
 # better-sqlite3 is a V8-ABI module and must be rebuilt against Electron's headers.
 npmRebuild: true

@@ -40,6 +40,7 @@ export const SETTING_RESUME = 'playback.resumePosition'
 export const SETTING_RESUME_AFTER = 'playback.resumeAfterPercent'
 export const SETTING_SHOW_CONTINUE = 'playback.showContinue'
 export const SETTING_CONTINUE_COUNT = 'playback.continueCount'
+export const SETTING_AUTO_UPDATE = 'app.autoUpdate'
 export const SETTING_RESUME_SESSIONS = 'playback.resumeInSessions'
 export const SETTING_DUPLICATE_DISTANCE = 'duplicates.distance'
 export const SETTING_TOY = 'toy.prefs'
@@ -164,6 +165,7 @@ export function playbackPrefs(): PlaybackPrefs {
     resumeAfterPercent: percent(getSetting(SETTING_RESUME_AFTER)),
     showContinue: getSetting(SETTING_SHOW_CONTINUE) !== '0',
     continueCount: continueCount(getSetting(SETTING_CONTINUE_COUNT)),
+    autoUpdate: getSetting(SETTING_AUTO_UPDATE) !== '0',
     resumeInSessions: getSetting(SETTING_RESUME_SESSIONS) !== '0',
   }
 }
@@ -235,6 +237,7 @@ export function setPlaybackPrefs(patch: Partial<PlaybackPrefs>): PlaybackPrefs {
   if (patch.continueCount !== undefined) {
     setSetting(SETTING_CONTINUE_COUNT, String(continueCount(patch.continueCount)))
   }
+  if (patch.autoUpdate !== undefined) setSetting(SETTING_AUTO_UPDATE, patch.autoUpdate ? '1' : '0')
   if (patch.resumeInSessions !== undefined) {
     setSetting(SETTING_RESUME_SESSIONS, patch.resumeInSessions ? '1' : '0')
   }

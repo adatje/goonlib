@@ -317,6 +317,8 @@ export interface PlaybackPrefs {
   showContinue: boolean
   /** The most part-watched videos Continue watching will hold. */
   continueCount: number
+  /** Look for a newer version of the app shortly after it opens. */
+  autoUpdate: boolean
   /** Opening something in a Watch Together session starts at the host's position. */
   resumeInSessions: boolean
 }
@@ -326,6 +328,27 @@ export const IMAGE_SECONDS = { min: 1, max: 500, default: 8 } as const
 
 /** The range "remember after" is held to, as a percentage of a video's length. */
 export const RESUME_AFTER = { min: 0, max: 50, default: 30 } as const
+
+/**
+ * Where the app is in finding, fetching and becoming a newer version of itself.
+ *
+ * `manual` is a build that cannot install one - macOS will not replace an
+ * unsigned app - so it knows what is out and offers the release page instead.
+ */
+export interface UpdateState {
+  kind: 'idle' | 'checking' | 'none' | 'available' | 'downloading' | 'ready' | 'manual' | 'error' | 'unsupported'
+  /** The version running now. */
+  version: string
+  /** The version found, where there is one. */
+  newVersion?: string
+  /** How far a download has got, 0-100. */
+  percent?: number
+  /** Where to fetch it by hand, when this build cannot install it. */
+  url?: string
+  /** Why it failed, or why it is unsupported. */
+  message?: string
+  reason?: string
+}
 
 /** How many items Continue watching may hold. */
 export const CONTINUE_COUNT = { min: 3, max: 50, default: 20 } as const
@@ -964,10 +987,27 @@ export const IPC = {
   toyPatternDelete: 'toy:pattern-delete',
   /** Main -> renderer: the toy's status moved. */
   toyUpdate: 'toy:update',
+  updatesStatus: 'updates:status',
+  updatesCheck: 'updates:check',
+  updatesDownload: 'updates:download',
+  updatesInstall: 'updates:install',
+  /** Main -> renderer: the updater moved on. */
+  updatesUpdate: 'updates:update',
 } as const
 
 /** The surface exposed on `window.goonlib` by the preload bridge. */
 export interface GoonLibApi {
+  updates: {
+    /** Where the updater is right now. */
+    status(): Promise<UpdateState>
+    /** Looks for a newer version, whatever the setting says. */
+    check(): Promise<UpdateState>
+    /** Fetches what was found, or opens the release page where it cannot. */
+    download(): Promise<UpdateState>
+    /** Quits and comes back as the new version. */
+    install(): void
+    onUpdate(handler: (state: UpdateState) => void): () => void
+  }
   app: {
     info(): Promise<AppInfo>
     /**

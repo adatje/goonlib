@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { CONTINUE_COUNT, IMAGE_SECONDS, RESUME_AFTER } from '@shared/types'
 import type { PlaybackPrefs } from '@shared/types'
 import { NumberField, Slider, Switch } from './SettingsControls'
+import { UpdateSettings } from './UpdateSettings'
 
 /**
  * Settings → App: how the app itself behaves, starting with the media player.
@@ -84,6 +85,8 @@ export function AppSettings(props: {
         onPlaybackChange={props.onPlaybackChange}
         onChanged={props.onChanged}
       />
+
+      <UpdateSettings playback={playback} onPlaybackChange={props.onPlaybackChange} />
     </>
   )
 }

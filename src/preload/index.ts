@@ -51,6 +51,7 @@ import type {
   ToyPlayback,
   ToyPrefs,
   ToyStatus,
+  UpdateState,
 } from '@shared/types'
 
 /**
@@ -289,6 +290,17 @@ const api: GoonLibApi = {
       const wrapped = (_event: unknown, status: ToyStatus): void => listener(status)
       ipcRenderer.on(IPC.toyUpdate, wrapped)
       return () => ipcRenderer.removeListener(IPC.toyUpdate, wrapped)
+    },
+  },
+  updates: {
+    status: (): Promise<UpdateState> => ipcRenderer.invoke(IPC.updatesStatus),
+    check: (): Promise<UpdateState> => ipcRenderer.invoke(IPC.updatesCheck),
+    download: (): Promise<UpdateState> => ipcRenderer.invoke(IPC.updatesDownload),
+    install: (): void => ipcRenderer.send(IPC.updatesInstall),
+    onUpdate: (handler: (state: UpdateState) => void): (() => void) => {
+      const wrapped = (_event: unknown, state: UpdateState): void => handler(state)
+      ipcRenderer.on(IPC.updatesUpdate, wrapped)
+      return () => ipcRenderer.removeListener(IPC.updatesUpdate, wrapped)
     },
   },
 }

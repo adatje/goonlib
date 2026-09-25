@@ -135,6 +135,7 @@ export default function App(): React.JSX.Element {
     resumeAfterPercent: 30,
     showContinue: true,
     continueCount: CONTINUE_COUNT.default,
+    autoUpdate: true,
     resumeInSessions: true,
   })
 
