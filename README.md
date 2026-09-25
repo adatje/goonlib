@@ -37,7 +37,6 @@ Downloads are on the [releases page](../../releases) with:
 Running it from source, how the project is laid out, and how to send a change:
 see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-
 ## Features
 A brief overview of features per category
 

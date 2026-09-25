@@ -5089,3 +5089,30 @@ button.styling__reset:hover {
   overflow: hidden;
   overflow-wrap: anywhere;
 }
+
+/* Says this is a beta, beside the version it belongs to. */
+.settings__beta {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--heart) 22%, transparent);
+  color: var(--heart);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/*
+ * A link in the settings footer. No underline: this is an app, not a document,
+ * and the colour on hover is enough to say it is a link.
+ */
+.settings__link {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.settings__link:hover {
+  color: var(--heart);
+}

@@ -129,6 +129,16 @@ const PAGE_HEADS: Record<SheetTab, { title: string; intro: string }> = {
 const FEATURE_TABS: Array<{ id: SheetTab; label: string }> = [{ id: 'tagging', label: 'Auto-tagging' }]
 
 /**
+ * Whether this is a beta build, which the footer says out loud.
+ *
+ * A plain flag rather than something read out of the version: the version
+ * stays an ordinary number so the updater and the installers keep their usual
+ * names, and "beta" is a thing said to the reader rather than a release
+ * channel. Set it to false when 1.0 ships.
+ */
+const BETA = true
+
+/**
  * Settings: everything behind the one gear — how the app looks, the toy,
  * watching together, and AI — in one sheet with a tab for each.
  *
@@ -279,8 +289,25 @@ export function SettingsSheet(props: SettingsSheetProps): React.JSX.Element {
 
         {info ? (
           <footer className="settings__foot">
-            GoonLib {info.version} · Electron {info.electron}
-            {info.ffmpeg ? '' : ' · ffmpeg not found'} · Author: @Adatje
+            GoonLib {info.version}
+            {BETA ? (
+              <span className="settings__beta" title="A beta build. Things may move, and bugs are expected.">
+                beta
+              </span>
+            ) : null}
+            {info.ffmpeg ? '' : ' · ffmpeg not found'} · Author:{' '}
+            {/* target=_blank rather than an IPC call: the window's open handler
+                already sends anything opening a new window to the real browser
+                and denies the window itself. */}
+            <a
+              className="settings__link"
+              href="https://github.com/adatje"
+              target="_blank"
+              rel="noreferrer"
+              title="@Adatje on GitHub"
+            >
+              @Adatje
+            </a>
           </footer>
         ) : null}
       </div>
