@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { DURATION_BANDS, SIZE_BANDS } from '@shared/types'
 import type { DurationBand, SizeBand, Tag } from '@shared/types'
+import { FunnelIcon } from './SidebarIcons'
 
 /** What the Filters panel narrows by. Empty everywhere means no narrowing at all. */
 export interface FilterSet {
@@ -81,6 +82,7 @@ export function Filters(props: {
         aria-expanded={open}
         title={count > 0 ? `Filtering by ${count}` : 'Narrow what the grid shows'}
       >
+        <FunnelIcon />
         Filters
         {count > 0 ? <span className="toolbar__filter-count">{count}</span> : null}
         <span className="toolbar__sort-chevron" aria-hidden="true">

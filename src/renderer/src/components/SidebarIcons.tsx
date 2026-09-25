@@ -1,7 +1,9 @@
 /**
- * Icons for the sidebar's entries, so every one of them carries a glyph the
- * way Favorites carries its heart. Drawn as 1.3px strokes on a 16px grid to
- * sit with the heart at 13px, and coloured by whatever holds them.
+ * The app's line icons. They began as the sidebar's, so every entry could
+ * carry a glyph the way Favorites carries its heart, and the toolbar, the
+ * settings sheet and the selection bar now draw from the same sheet. Drawn as
+ * 1.3px strokes on a 16px grid to sit with the heart at 13px, and coloured by
+ * whatever holds them.
  *
  * Shapes marked icon__fill fill in, as the heart does, when their entry is
  * pointed at or selected; the stylesheet decides when.
@@ -228,6 +230,78 @@ export function MoveIcon(): React.JSX.Element {
       <path d="M2 4.5h4l1.2 1.5H14v7H2z" />
       <path d="M6 9.5h4.5" />
       <path d="M9 7.8l1.8 1.7L9 11.2" />
+    </Icon>
+  )
+}
+
+/** Images: a framed picture, with its sun and its horizon. */
+export function ImageIcon(): React.JSX.Element {
+  return (
+    <Icon>
+      <rect x="2" y="3.2" width="12" height="9.6" rx="1.4" />
+      <circle cx="5.6" cy="6.4" r="1.1" />
+      <path d="M2.4 11.4 6 8.2l2.3 2 2.1-1.7 3.2 2.9" />
+    </Icon>
+  )
+}
+
+/** Videos: a play triangle in its frame. */
+export function VideoIcon(): React.JSX.Element {
+  return (
+    <Icon>
+      <rect x="2" y="3.2" width="12" height="9.6" rx="1.4" />
+      <path d="M6.7 5.9 10.7 8l-4 2.1Z" />
+    </Icon>
+  )
+}
+
+/** Filters: a funnel, narrowing what comes through. */
+export function FunnelIcon(): React.JSX.Element {
+  return (
+    <Icon>
+      <path d="M2.2 3.2h11.6L9.4 8.3v4.3l-2.8 1.4V8.3Z" />
+    </Icon>
+  )
+}
+
+/** Sort: rows of falling length, with an arrow pointing down them. */
+export function SortIcon(): React.JSX.Element {
+  return (
+    <Icon>
+      <path d="M2.4 4.2h7.2M2.4 8h5M2.4 11.8h2.8" />
+      <path d="M12.7 4.2v7.6" />
+      <path d="M14.4 10.1 12.7 11.8 11 10.1" />
+    </Icon>
+  )
+}
+
+/**
+ * The divider between how many and how much: a platter seen face on.
+ *
+ * Round on purpose. It sits where the app's middot separator sits everywhere
+ * else, and a shape with no top or bottom parts the two numbers rather than
+ * labelling the one after it, which an upright drive or cylinder does. What it
+ * depicts matters less than that: the "GB" behind it has already said storage.
+ */
+export function StorageIcon(): React.JSX.Element {
+  return (
+    <Icon>
+      <circle cx="8" cy="8" r="6" />
+      <circle cx="8" cy="8" r="1.7" />
+      {/* The glint off the surface, which is what keeps it from reading as a
+          plain ring at 13px. */}
+      <path d="M11.4 4.6 9.3 6.7" />
+    </Icon>
+  )
+}
+
+/** A pasted link is fetched, not searched: an arrow coming down into a tray. */
+export function DownloadIcon(): React.JSX.Element {
+  return (
+    <Icon>
+      <path d="M8 2.4v6.8" />
+      <path d="M5.2 6.6 8 9.4l2.8-2.8" />
+      <path d="M2.8 11v1.4c0 .7.5 1.2 1.2 1.2h8c.7 0 1.2-.5 1.2-1.2V11" />
     </Icon>
   )
 }

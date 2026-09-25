@@ -759,11 +759,22 @@ body {
   -webkit-app-region: drag;
 }
 
-.toolbar__search {
+/* The box and the glyph sitting in it, which is why the box is the flexing
+   one and the input simply fills it. */
+.toolbar__searchbox {
+  position: relative;
+  display: flex;
   flex: 1;
   min-width: 120px;
   max-width: 340px;
-  padding: 7px 11px;
+}
+
+.toolbar__search {
+  flex: 1;
+  /* Without this the input keeps its own intrinsic width and refuses to
+     shrink with the box around it. */
+  min-width: 0;
+  padding: 7px 11px 7px 31px;
   border: 1px solid var(--input-border);
   border-radius: 8px;
   background: var(--bg-sunken);
@@ -775,10 +786,32 @@ body {
   color: var(--text-muted);
 }
 
+.toolbar__search-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  display: flex;
+  transform: translateY(-50%);
+  /* Clicks belong to the box behind it, which is the input. */
+  pointer-events: none;
+}
+
+/*
+ * Every glyph across the top is the sidebar's pink, so the chrome down the
+ * left and the chrome along the top read as one set rather than two.
+ */
+.toolbar__search-icon,
+.segmented__item svg,
+.toolbar__sort svg,
+.toolbar__count svg {
+  flex-shrink: 0;
+  color: var(--icon);
+}
+
 .toolbar__sort {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   padding: 6px 10px;
   border: 1px solid var(--input-border);
   border-radius: 8px;
@@ -795,11 +828,16 @@ body {
 }
 
 .toolbar__sort-chevron {
+  /* A touch further from the label than the glyph on the other side. */
+  margin-left: 1px;
   font-size: 10px;
   color: var(--text-muted);
 }
 
 .toolbar__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
   font-size: 12px;
   color: var(--text-muted);
@@ -817,7 +855,10 @@ body {
 }
 
 .segmented__item {
-  padding: 5px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
   border: 0;
   border-radius: 6px;
   background: transparent;

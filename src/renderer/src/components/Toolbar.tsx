@@ -3,6 +3,7 @@ import type { MediaKind, MediaSort, Tag } from '@shared/types'
 import { Filters } from './Filters'
 import type { FilterSet } from './Filters'
 import { formatBytes, formatCount } from '../format'
+import { DownloadIcon, ImageIcon, LibraryIcon, SearchIcon, SortIcon, StorageIcon, VideoIcon } from './SidebarIcons'
 import type { ToyView } from '../state/useToy'
 import { ToyChip } from './ToyChip'
 
@@ -96,6 +97,13 @@ export function HeartIcon({ filled = false, size = 15 }: { filled?: boolean; siz
   )
 }
 
+/** The media-type segments, each with the glyph that stands for it. */
+const KINDS: Array<{ value: MediaKind | 'all'; label: string; icon: React.JSX.Element }> = [
+  { value: 'all', label: 'All', icon: <LibraryIcon /> },
+  { value: 'image', label: 'Images', icon: <ImageIcon /> },
+  { value: 'video', label: 'Videos', icon: <VideoIcon /> },
+]
+
 const SORT_LABELS: Array<{ value: MediaSort; label: string }> = [
   { value: 'added', label: 'Recently added' },
   { value: 'name', label: 'Name' },
@@ -113,19 +121,27 @@ export function Toolbar(props: ToolbarProps): React.JSX.Element {
   return (
     <div className="toolbar">
       <div className="toolbar__drag" aria-hidden="true" />
-      <input
-        type="search"
-        className={scrapeMode ? 'toolbar__search toolbar__search--url' : 'toolbar__search'}
-        placeholder="Search / Download media items"
-        value={props.search}
-        onChange={(event) => props.onSearchChange(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && scrapeMode && !props.scraping) {
-            props.onScrape(props.search.trim())
-          }
-        }}
-        aria-label="Search the library, or paste a 4chan thread link to download it"
-      />
+      <div className="toolbar__searchbox">
+        {/* The glyph says which of the box's two jobs is live: a magnifier
+            while it is searching names, an arrow down once what is in it is a
+            link to fetch. */}
+        <span className="toolbar__search-icon" aria-hidden="true">
+          {scrapeMode ? <DownloadIcon /> : <SearchIcon />}
+        </span>
+        <input
+          type="search"
+          className={scrapeMode ? 'toolbar__search toolbar__search--url' : 'toolbar__search'}
+          placeholder="Search / Download media items"
+          value={props.search}
+          onChange={(event) => props.onSearchChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && scrapeMode && !props.scraping) {
+              props.onScrape(props.search.trim())
+            }
+          }}
+          aria-label="Search the library, or paste a 4chan thread link to download it"
+        />
+      </div>
 
       {scrapeMode ? (
         <button
@@ -140,15 +156,16 @@ export function Toolbar(props: ToolbarProps): React.JSX.Element {
       ) : null}
 
       <div className="segmented" role="group" aria-label="Filter by media type">
-        {(['all', 'image', 'video'] as const).map((value) => (
+        {KINDS.map((entry) => (
           <button
-            key={value}
+            key={entry.value}
             type="button"
-            className={props.kind === value ? 'segmented__item segmented__item--on' : 'segmented__item'}
-            onClick={() => props.onKindChange(value)}
-            aria-pressed={props.kind === value}
+            className={props.kind === entry.value ? 'segmented__item segmented__item--on' : 'segmented__item'}
+            onClick={() => props.onKindChange(entry.value)}
+            aria-pressed={props.kind === entry.value}
           >
-            {value === 'all' ? 'All' : value === 'image' ? 'Images' : 'Videos'}
+            {entry.icon}
+            {entry.label}
           </button>
         ))}
       </div>
@@ -163,8 +180,11 @@ export function Toolbar(props: ToolbarProps): React.JSX.Element {
 
       {props.toy.live ? <ToyChip toy={props.toy} /> : null}
 
+      {/* The glyph is the divider: how many, then what they weigh. */}
       <span className="toolbar__count">
-        {formatCount(props.total)} items - {formatBytes(props.totalBytes)}
+        {formatCount(props.total)} items
+        <StorageIcon />
+        {formatBytes(props.totalBytes)}
       </span>
     </div>
   )
@@ -196,6 +216,7 @@ function SortMenu(props: {
         aria-expanded={open}
         aria-label={`Sort by ${current?.label ?? ''}`}
       >
+        <SortIcon />
         {current?.label}
         <span className="toolbar__sort-chevron" aria-hidden="true">
           ▾
