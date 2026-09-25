@@ -139,6 +139,10 @@
     background: var(--bg-raised); color: inherit;
   }
   .controls input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  /* The scrubber takes the room; the volume is a fixed short run beside the
+     speaker, and steps out of the way entirely on a narrow screen. */
+  .controls .vol { flex: none; width: 74px; }
+  @media (max-width: 560px) { .controls .vol { display: none; } }
   .time { font-variant-numeric: tabular-nums; color: var(--dim); font-size: 12px; }
 
   .who { display: flex; gap: 8px; align-items: center; padding: 8px 12px; flex: none;
@@ -356,7 +360,10 @@
       <button class="chip" data-kind="video" aria-pressed="false">Video</button>
       <button class="chip" data-kind="image" aria-pressed="false">Images</button>
       <span class="kinds-spacer"></span>
-      <button class="chip shuffle" id="shuffleLib" aria-pressed="false" title="Shuffle the library"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3.5h2.4c.9 0 1.7.45 2.2 1.2l3.8 6.1c.5.75 1.3 1.2 2.2 1.2H15M1 12.5h2.4c.9 0 1.7-.45 2.2-1.2l.9-1.45M15 3.5h-2.3c-.9 0-1.7.45-2.2 1.2l-.9 1.45"/><path d="M12.8 1.6 15 3.5l-2.2 1.9M12.8 10.1l2.2 1.9-2.2 1.9"/></svg></button>
+      <!-- A die, not the crossing arrows below: this one reorders the list you are
+           looking at, and wearing the playback shuffle's glyph made two different
+           things look like one control in two places. -->
+      <button class="chip shuffle" id="shuffleLib" aria-pressed="false" title="Shuffle the order of the library"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="2.2" width="11.6" height="11.6" rx="2.6"/><circle cx="5.6" cy="5.6" r="1.05" fill="currentColor" stroke="none"/><circle cx="10.4" cy="10.4" r="1.05" fill="currentColor" stroke="none"/><circle cx="10.4" cy="5.6" r="1.05" fill="currentColor" stroke="none"/></svg></button>
     </div>
 
     <div class="tabs" role="tablist">
@@ -415,6 +422,8 @@
       <button class="icon" id="shuffleNext" aria-pressed="false" aria-label="Shuffle"
               title="Shuffle: autoplay picks at random rather than in order"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3.5h2.4c.9 0 1.7.45 2.2 1.2l3.8 6.1c.5.75 1.3 1.2 2.2 1.2H15M1 12.5h2.4c.9 0 1.7-.45 2.2-1.2l.9-1.45M15 3.5h-2.3c-.9 0-1.7.45-2.2 1.2l-.9 1.45"/><path d="M12.8 1.6 15 3.5l-2.2 1.9M12.8 10.1l2.2 1.9-2.2 1.9"/></svg></button>
       <button class="icon" id="mute" aria-label="Mute">&#128266;</button>
+      <input type="range" class="vol" id="volume" min="0" max="1" step="0.01" value="1"
+             aria-label="Volume" title="Volume">
       <button class="icon" id="full" aria-label="Fullscreen">&#9974;</button>
     </div>
     <!-- The chat bar: the log opens above it, as in the app. -->
@@ -460,6 +469,25 @@
   var SEEK_MS = 2000;
   var NUDGE = 0.05;
 
+  /*
+   * A wedged video, and getting out of one.
+   *
+   * A media element can stop advancing mid-file while still reporting itself
+   * as playing. Drift correction then seeks it back onto the room's clock
+   * every half second, which does not unwedge it - the picture sits frozen
+   * while the timer jumps, which is what "glitching out" looks like. Six
+   * samples of a playhead that has not moved is three seconds, long enough
+   * that ordinary buffering has been given its chance.
+   *
+   * The way out is to fetch the file again. Nothing else here needs to know:
+   * `canplaythrough` and the drift correction put it back on the clock by
+   * themselves, exactly as they do when the room opens something new.
+   */
+  var STALL_SAMPLES = 6;
+  var RELOAD_GAP_MS = 12000;
+  var stalls = 0;
+  var lastReload = 0;
+
   // Mirrors COWATCH_REACTIONS in src/shared/types.ts.
   var EMOJI = {
     heart: '❤️', fire: '🔥', lol: '😂', wow: '😮',
@@ -475,6 +503,29 @@
   var items = new Map();  // mediaId -> item, for titles and thumbnails
   var current = null;     // mediaId currently loaded into the player
   var wantSound = true;   // the user has not asked for silence
+
+  /*
+   * How loud, kept apart from whether there is sound at all.
+   *
+   * `muted` and `volume` are separate things on a media element and the client
+   * only ever set the first, so there was no way to be quiet without being
+   * silent. Remembered on this device, like autoplay and shuffle, and applied
+   * on every load because a fresh element starts at 1.
+   */
+  var volume = 1;
+  try {
+    var savedVolume = parseFloat(localStorage.getItem('goonlib.volume'));
+    if (isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1) volume = savedVolume;
+  } catch (e) {}
+
+  function applyVolume() {
+    video.volume = volume;
+    $('volume').value = String(volume);
+    // Nothing to hear either way, so the speaker shows silence for both.
+    var silent = !wantSound || volume === 0;
+    $('mute').innerHTML = silent ? '&#128263;' : '&#128266;';
+    $('mute').setAttribute('aria-label', silent ? 'Unmute' : 'Mute');
+  }
   var lastSeen = 0;       // chat messages already rendered
   var sentReady = null;   // last readiness posted, as 'mediaId:bool'
   var blocked = false;    // the browser refused to play; wait for a gesture
@@ -667,12 +718,15 @@
 
   function startChecking() {
     if (checking) return;
-    checking = setInterval(check, 5000);
+    // Three seconds rather than five: this is what notices the line has come
+    // back, and coming back now also re-reads the library panes.
+    checking = setInterval(check, 3000);
   }
 
   function check() {
     var abort = typeof AbortController === 'function' ? new AbortController() : null;
-    var timer = setTimeout(function () { if (abort) abort.abort(); }, 4000);
+    // Shorter than the interval, so a check never outlives the next one.
+    var timer = setTimeout(function () { if (abort) abort.abort(); }, 2500);
     fetch('/api/state', { cache: 'no-store', signal: abort ? abort.signal : undefined })
       .then(function (r) {
         clearTimeout(timer);
@@ -691,8 +745,21 @@
 
   function setLost(next) {
     if (lost === next) return;
+    var recovered = lost && !next;
     lost = next;
     $('lost').hidden = !lost;
+    /*
+     * The room state arrives with every check, but the library panes do not:
+     * they are fetched once and then left alone. A drop is exactly when the
+     * host is likely to have been scanning or filing, so coming back re-reads
+     * the collections, tags, folders and grid rather than showing a picture of
+     * the library from before the line went quiet.
+     */
+    if (recovered) {
+      renderNav();
+      renderCrumbs();
+      resetGrid();
+    }
   }
 
   // --- rendering -----------------------------------------------------------
@@ -994,6 +1061,7 @@
     if (video.hidden || blocked) return;
 
     video.muted = !wantSound;
+    video.volume = volume;
     video.play().then(function () {
       blocked = false;
       hideVeil();
@@ -1062,12 +1130,26 @@
     // duration a few frames longer than its last sample stalls on the final
     // frame instead, un-paused and going nowhere. Only un-paused playback
     // counts, so pausing on the last second is not mistaken for the end.
-    if (!video.paused && isFinite(video.duration) && video.duration > 0) {
+    if (video.seeking) {
+      // A seek in flight moves the playhead on its own account; measuring
+      // against it would read as either stuck or moving at random.
+      lastTime = -1;
+      stalls = 0;
+    } else if (!video.paused && isFinite(video.duration) && video.duration > 0) {
       var stuck = video.currentTime === lastTime;
       lastTime = video.currentTime;
-      if (stuck && video.duration - video.currentTime <= 0.5) finishVideo();
+      if (stuck && video.duration - video.currentTime <= 0.5) {
+        finishVideo();
+        stalls = 0;
+      } else if (stuck) {
+        stalls += 1;
+        if (stalls >= STALL_SAMPLES) refetch();
+      } else {
+        stalls = 0;
+      }
     } else {
       lastTime = -1;
+      stalls = 0;
     }
 
     if (isRunning(pb) && video.paused) attemptPlay();
@@ -1085,6 +1167,22 @@
     videoFor = null;
     video.pause();
     video.removeAttribute('src');
+    video.load();
+  }
+
+  /**
+   * Fetches the current file again, for a player that has stopped advancing.
+   *
+   * Rate limited, because a file that will not play at all would otherwise be
+   * reloaded twice a second forever - and a reload that does not help is worse
+   * than a frozen frame, since it takes the sound and the buffer with it.
+   */
+  function refetch() {
+    stalls = 0;
+    if (videoFor === null || Date.now() - lastReload < RELOAD_GAP_MS) return;
+    lastReload = Date.now();
+    lastTime = -1;
+    blocked = false;
     video.load();
   }
 
@@ -1252,6 +1350,7 @@
   // Both of these are real user gestures, which is what the browser wants.
   $('veilGo').addEventListener('click', function () {
     wantSound = true;
+    unsilence();
     blocked = false;
     attemptPlay();
     syncClock();
@@ -1259,10 +1358,20 @@
 
   $('sound').addEventListener('click', function () {
     wantSound = true;
+    unsilence();
     video.muted = false;
     $('sound').hidden = true;
     video.play().catch(function () { video.muted = true; $('sound').hidden = false; });
   });
+
+  /** Asking for sound with the slider at the bottom would hand back silence. */
+  function unsilence() {
+    if (volume === 0) {
+      volume = 0.5;
+      try { localStorage.setItem('goonlib.volume', String(volume)); } catch (e) {}
+    }
+    applyVolume();
+  }
 
   // --- controls ------------------------------------------------------------
 
@@ -1293,9 +1402,21 @@
   $('shuffleNext').addEventListener('click', function () {
     shuffleNext = !shuffleNext;
     try { localStorage.setItem('goonlib.shuffleNext', shuffleNext ? '1' : '0'); } catch (e) {}
+    /*
+     * Shuffle only decides where autoplay goes, so on its own it did nothing at
+     * all - the control sat there lit and inert. Asking for shuffle is asking
+     * to be moved along at random, so it turns autoplay on with it.
+     */
+    if (shuffleNext && !autoplayNext) {
+      autoplayNext = true;
+      try { localStorage.setItem('goonlib.autoplay', '1'); } catch (e) {}
+      syncAutoplay();
+      timeImage();
+    }
     syncShuffleNext();
   });
   syncShuffleNext();
+  applyVolume();
 
   $('shuffleLib').addEventListener('click', function () {
     // On, with a fresh order each time; clicked while on, back to newest first.
@@ -1316,9 +1437,25 @@
 
   $('mute').addEventListener('click', function () {
     wantSound = !wantSound;
+    // Coming back from silence with the slider at the bottom would unmute into
+    // nothing, which reads as a broken button.
+    if (wantSound && volume === 0) {
+      volume = 0.5;
+      try { localStorage.setItem('goonlib.volume', String(volume)); } catch (e) {}
+    }
     video.muted = !wantSound;
-    $('mute').innerHTML = video.muted ? '&#128263;' : '&#128266;';
+    applyVolume();
     $('sound').hidden = true;
+  });
+
+  $('volume').addEventListener('input', function (e) {
+    volume = Number(e.target.value);
+    // Dragging to the bottom is a way of asking for silence, and dragging back
+    // up is a way of asking for it to stop.
+    wantSound = volume > 0;
+    video.muted = !wantSound;
+    applyVolume();
+    try { localStorage.setItem('goonlib.volume', String(volume)); } catch (e) {}
   });
 
   $('full').addEventListener('click', function () {
