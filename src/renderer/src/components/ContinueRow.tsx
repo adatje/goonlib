@@ -1,9 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MediaItem } from '@shared/types'
 import { MediaCard } from './MediaCard'
-
-/** How many part-watched videos the row offers. */
-const LIMIT = 12
 
 /**
  * Videos left part-way through, across the top of the library.
@@ -16,15 +13,21 @@ const LIMIT = 12
 export function ContinueRow(props: {
   /** Bumped by whoever wants the row re-read — after watching something, say. */
   refreshKey: number
+  /** The most it will hold, from Settings. */
+  count: number
   onOpen: (mediaId: number) => void
   onContextMenu?: (mediaId: number, x: number, y: number) => void
   onToggleFavorite?: (item: MediaItem) => void
 }): React.JSX.Element | null {
   const [items, setItems] = useState<Array<{ item: MediaItem; progress: number }>>([])
+  /** Which edges have more beyond them: 'none', 'start', 'middle' or 'end'. */
+  const [edges, setEdges] = useState<'none' | 'start' | 'middle' | 'end'>('none')
+  const rowRef = useRef<HTMLDivElement | null>(null)
 
+  const { count } = props
   const load = useCallback(async () => {
     try {
-      const found = await window.goonlib.media.continueWatching(LIMIT)
+      const found = await window.goonlib.media.continueWatching(count)
       const withProgress = await Promise.all(
         found.map(async (item) => {
           const views = await window.goonlib.media.views(item.id).catch(() => null)
@@ -37,18 +40,45 @@ export function ContinueRow(props: {
     } catch {
       setItems([])
     }
-  }, [])
+  }, [count])
 
   useEffect(() => {
     void load()
   }, [load, props.refreshKey])
+
+  /**
+   * Which way the row can still be scrolled, so the stylesheet can fade that
+   * edge. A card sliced off at the frame's edge looks like a layout fault; a
+   * card fading out looks like there is more of it.
+   */
+  useEffect(() => {
+    const row = rowRef.current
+    if (!row) return
+
+    const measure = (): void => {
+      const slack = row.scrollWidth - row.clientWidth
+      if (slack <= 4) return setEdges('none')
+      if (row.scrollLeft <= 4) return setEdges('start')
+      if (row.scrollLeft >= slack - 4) return setEdges('end')
+      setEdges('middle')
+    }
+
+    measure()
+    row.addEventListener('scroll', measure, { passive: true })
+    const observer = new ResizeObserver(measure)
+    observer.observe(row)
+    return () => {
+      row.removeEventListener('scroll', measure)
+      observer.disconnect()
+    }
+  }, [items])
 
   if (items.length === 0) return null
 
   return (
     <section className="continue" aria-label="Continue watching">
       <h2 className="continue__title">Continue watching</h2>
-      <div className="continue__row">
+      <div ref={rowRef} className="continue__row" data-edges={edges}>
         {items.map(({ item, progress }) => (
           <div key={item.id} className="continue__card">
             <MediaCard

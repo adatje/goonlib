@@ -9,7 +9,7 @@
 import { safeStorage } from 'electron'
 import { defaultBindings, KEY_ACTIONS, mergeBindings, normalizeBinding } from '@shared/keys'
 import type { KeyBindings } from '@shared/keys'
-import { IMAGE_SECONDS, RESUME_AFTER } from '@shared/types'
+import { CONTINUE_COUNT, IMAGE_SECONDS, RESUME_AFTER } from '@shared/types'
 import type { AiSettings, AiSettingsView, PlaybackPrefs, ToyPrefs } from '@shared/types'
 import { AI_DEFAULTS, normaliseAiSettings } from '../ai/settings-shape'
 import { DEFAULT_CACHE_CAP } from '../media/evict'
@@ -39,6 +39,7 @@ export const SETTING_KEEP_HISTORY = 'playback.keepHistory'
 export const SETTING_RESUME = 'playback.resumePosition'
 export const SETTING_RESUME_AFTER = 'playback.resumeAfterPercent'
 export const SETTING_SHOW_CONTINUE = 'playback.showContinue'
+export const SETTING_CONTINUE_COUNT = 'playback.continueCount'
 export const SETTING_RESUME_SESSIONS = 'playback.resumeInSessions'
 export const SETTING_DUPLICATE_DISTANCE = 'duplicates.distance'
 export const SETTING_TOY = 'toy.prefs'
@@ -162,6 +163,7 @@ export function playbackPrefs(): PlaybackPrefs {
     resumePosition: getSetting(SETTING_RESUME) !== '0',
     resumeAfterPercent: percent(getSetting(SETTING_RESUME_AFTER)),
     showContinue: getSetting(SETTING_SHOW_CONTINUE) !== '0',
+    continueCount: continueCount(getSetting(SETTING_CONTINUE_COUNT)),
     resumeInSessions: getSetting(SETTING_RESUME_SESSIONS) !== '0',
   }
 }
@@ -171,6 +173,13 @@ function percent(value: unknown): number {
   const share = Number(value ?? RESUME_AFTER.default)
   if (!Number.isFinite(share)) return RESUME_AFTER.default
   return Math.min(RESUME_AFTER.max, Math.max(RESUME_AFTER.min, Math.round(share)))
+}
+
+/** A whole number of items within the allowed range. */
+function continueCount(value: unknown): number {
+  const count = Number(value ?? CONTINUE_COUNT.default)
+  if (!Number.isFinite(count)) return CONTINUE_COUNT.default
+  return Math.min(CONTINUE_COUNT.max, Math.max(CONTINUE_COUNT.min, Math.round(count)))
 }
 
 /** Whole seconds, held between the limits; anything unreadable is the default. */
@@ -222,6 +231,9 @@ export function setPlaybackPrefs(patch: Partial<PlaybackPrefs>): PlaybackPrefs {
   }
   if (patch.showContinue !== undefined) {
     setSetting(SETTING_SHOW_CONTINUE, patch.showContinue ? '1' : '0')
+  }
+  if (patch.continueCount !== undefined) {
+    setSetting(SETTING_CONTINUE_COUNT, String(continueCount(patch.continueCount)))
   }
   if (patch.resumeInSessions !== undefined) {
     setSetting(SETTING_RESUME_SESSIONS, patch.resumeInSessions ? '1' : '0')

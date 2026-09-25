@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { IMAGE_SECONDS, RESUME_AFTER } from '@shared/types'
+import { CONTINUE_COUNT, IMAGE_SECONDS, RESUME_AFTER } from '@shared/types'
 import type { PlaybackPrefs } from '@shared/types'
-import { Slider, Switch } from './SettingsControls'
+import { NumberField, Slider, Switch } from './SettingsControls'
 
 /**
  * Settings → App: how the app itself behaves, starting with the media player.
@@ -135,6 +135,17 @@ function WatchHistory(props: {
         checked={playback.showContinue}
         disabled={!playback.resumePosition}
         onChange={(showContinue) => props.onPlaybackChange({ showContinue })}
+      />
+
+      <NumberField
+        label="Continue watching holds"
+        hint="The most it will keep. The row scrolls sideways once they no longer fit."
+        suffix="items"
+        min={CONTINUE_COUNT.min}
+        max={CONTINUE_COUNT.max}
+        value={playback.continueCount}
+        disabled={!playback.resumePosition || !playback.showContinue}
+        onChange={(continueCount) => props.onPlaybackChange({ continueCount })}
       />
 
       <ClearHistory onCleared={props.onChanged} />

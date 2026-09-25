@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { VirtuosoGrid } from 'react-virtuoso'
 import type { MediaItem } from '@shared/types'
 import type { LibraryView } from '../state/useLibrary'
@@ -28,6 +29,36 @@ export function MediaGrid({
   onContextMenu,
   onToggleFavorite,
 }: MediaGridProps): React.JSX.Element {
+  /**
+   * Which way the grid can still be scrolled, so the stylesheet can fade that
+   * edge - the same trick the Continue watching row uses, turned on its side.
+   * The scroller belongs to the virtualiser, so it is taken from its ref.
+   */
+  const [edges, setEdges] = useState<'none' | 'start' | 'middle' | 'end'>('none')
+  const scrollerRef = useRef<HTMLElement | Window | null>(null)
+
+  useEffect(() => {
+    const scroller = scrollerRef.current
+    if (!scroller || scroller instanceof Window) return
+
+    const measure = (): void => {
+      const slack = scroller.scrollHeight - scroller.clientHeight
+      if (slack <= 4) return setEdges('none')
+      if (scroller.scrollTop <= 4) return setEdges('start')
+      if (scroller.scrollTop >= slack - 4) return setEdges('end')
+      setEdges('middle')
+    }
+
+    measure()
+    scroller.addEventListener('scroll', measure, { passive: true })
+    const observer = new ResizeObserver(measure)
+    observer.observe(scroller)
+    return () => {
+      scroller.removeEventListener('scroll', measure)
+      observer.disconnect()
+    }
+  }, [view.total])
+
   if (view.error) {
     return (
       <div className="empty" role="alert">
@@ -44,6 +75,8 @@ export function MediaGrid({
   return (
     <VirtuosoGrid
       className="grid"
+      data-edges={edges}
+      scrollerRef={(ref) => (scrollerRef.current = ref)}
       totalCount={view.total}
       listClassName="grid__list"
       itemClassName="grid__item"

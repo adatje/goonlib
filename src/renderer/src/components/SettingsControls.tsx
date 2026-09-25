@@ -35,6 +35,61 @@ export function Switch(props: {
 }
 
 /**
+ * A typed number, held to its range when it is committed rather than as it is
+ * typed: a half-typed "1" on the way to "12" is never rejected or rounded up.
+ * Commits on Enter and on leaving the field.
+ */
+export function NumberField(props: {
+  label: string
+  hint?: string
+  /** A word after the box: "seconds", "items". */
+  suffix?: string
+  min: number
+  max: number
+  value: number
+  disabled?: boolean
+  onChange: (value: number) => void
+}): React.JSX.Element {
+  const [draft, setDraft] = useState(String(props.value))
+  useEffect(() => setDraft(String(props.value)), [props.value])
+
+  const commit = (): void => {
+    const typed = Number(draft)
+    if (draft.trim() === '' || !Number.isFinite(typed)) {
+      setDraft(String(props.value))
+      return
+    }
+    const held = Math.min(props.max, Math.max(props.min, Math.round(typed)))
+    setDraft(String(held))
+    if (held !== props.value) props.onChange(held)
+  }
+
+  return (
+    <label className="settings__field">
+      <span className="settings__label">{props.label}</span>
+      <span className="settings__row">
+        <input
+          type="number"
+          className="settings__number"
+          min={props.min}
+          max={props.max}
+          step={1}
+          value={draft}
+          disabled={props.disabled}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') commit()
+          }}
+        />
+        {props.suffix ? <span className="settings__hint">{props.suffix}</span> : null}
+      </span>
+      {props.hint ? <span className="settings__hint">{props.hint}</span> : null}
+    </label>
+  )
+}
+
+/**
  * A slider that stores on release, not on every pixel of the drag - each change
  * is a settings write in the main process - while still showing the number as
  * it moves.

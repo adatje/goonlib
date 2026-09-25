@@ -315,6 +315,8 @@ export interface PlaybackPrefs {
   resumeAfterPercent: number
   /** Show the Continue watching row above the library. */
   showContinue: boolean
+  /** The most part-watched videos Continue watching will hold. */
+  continueCount: number
   /** Opening something in a Watch Together session starts at the host's position. */
   resumeInSessions: boolean
 }
@@ -324,6 +326,9 @@ export const IMAGE_SECONDS = { min: 1, max: 500, default: 8 } as const
 
 /** The range "remember after" is held to, as a percentage of a video's length. */
 export const RESUME_AFTER = { min: 0, max: 50, default: 30 } as const
+
+/** How many items Continue watching may hold. */
+export const CONTINUE_COUNT = { min: 3, max: 50, default: 20 } as const
 
 // ---------------------------------------------------------------------------
 // Toys

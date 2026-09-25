@@ -892,11 +892,62 @@ body {
 .grid {
   flex: 1;
   min-height: 0;
+  /*
+   * A gutter on both edges, not just the scrollbar's. Reserved on one side
+   * only, the centred columns sit half a scrollbar left of true centre, and the
+   * Continue watching row above - which has no scrollbar - no longer lines up
+   * with them.
+   */
+  scrollbar-gutter: stable both-edges;
 }
 
+/*
+ * The same fade the Continue watching row uses, turned on its side: whichever
+ * edge has more grid beyond it softens instead of cutting a row of thumbnails
+ * off square. MediaGrid reports the scroll position, since CSS cannot see one.
+ */
+.grid[data-edges='start'] {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent 100%);
+}
+
+/*
+ * A card's thumbnail is 188px tall, and no more than its top or bottom fifth
+ * should ever be under the fade - so 40px, with the ramp weighted early
+ * (25% at a third, 70% at two thirds) to keep the edge soft rather than cut.
+ */
+.grid[data-edges='middle'] {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    rgb(0 0 0 / 0.25) 14px,
+    rgb(0 0 0 / 0.7) 28px,
+    #000 40px,
+    #000 calc(100% - 40px),
+    transparent 100%
+  );
+}
+
+.grid[data-edges='end'] {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    rgb(0 0 0 / 0.25) 14px,
+    rgb(0 0 0 / 0.7) 28px,
+    #000 40px
+  );
+}
+
+/*
+ * A grid rather than a wrapping flex, so the columns are fixed and the whole
+ * set of them is centred in whatever width is going: left-aligned, a wide
+ * window left a growing gutter down one side. Fixed columns also keep a part-
+ * rendered row aligned with the ones above it, which centring a flex wrap
+ * would not - the virtualised grid draws partial rows as it scrolls.
+ */
 .grid__list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 200px);
+  justify-content: center;
   padding: 10px;
 }
 
@@ -4146,7 +4197,9 @@ button.styling__reset:hover {
 /* Continue watching: a row of part-watched videos above the library. */
 .continue {
   flex-shrink: 0;
-  padding: 12px 20px 0;
+  /* The same side padding as the library's list, so the row below can be
+     measured against the same width. */
+  padding: 12px 10px 0;
 }
 
 .continue__title {
@@ -4158,7 +4211,38 @@ button.styling__reset:hover {
   color: var(--text-muted);
 }
 
+/*
+ * The row scrolls sideways, and a card sliced off square at the frame's edge
+ * reads as a layout fault rather than as an invitation. The edge that has more
+ * beyond it fades out instead; ContinueRow says which edges those are, since
+ * CSS cannot see a scroll position.
+ */
+.continue__row[data-edges='start'] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent 100%);
+}
+
+.continue__row[data-edges='middle'] {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 64px,
+    #000 calc(100% - 64px),
+    transparent 100%
+  );
+}
+
+.continue__row[data-edges='end'] {
+  mask-image: linear-gradient(to right, transparent 0, #000 64px);
+}
+
 .continue__row {
+  /*
+   * Held to a whole number of the library's 200px columns and centred, so the
+   * row starts and ends where the grid below it does. Full width, its fade
+   * began past the last column and read as misaligned.
+   */
+  width: round(down, 100%, 200px);
+  margin-inline: auto;
   display: flex;
   /*
    * Cards size to their own content, never to the row. Stretched instead, each
@@ -4179,7 +4263,12 @@ button.styling__reset:hover {
 .continue__divider {
   width: 60%;
   height: 1px;
-  margin: 0 auto;
+  /*
+   * Even room on both sides, measured from the last thing drawn above the rule
+   * to the first thing drawn below it: the filename under a Continue watching
+   * card, and the top of the library's first thumbnail.
+   */
+  margin: 8px auto 28px;
   border: 0;
   background: color-mix(in srgb, var(--icon) 60%, transparent);
 }

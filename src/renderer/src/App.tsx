@@ -13,7 +13,7 @@ import type {
   Tag,
   TrashUndoResult,
 } from '@shared/types'
-import { COWATCH_REACTIONS, IMAGE_SECONDS } from '@shared/types'
+import { CONTINUE_COUNT, COWATCH_REACTIONS, IMAGE_SECONDS } from '@shared/types'
 import { Breadcrumb } from './components/Breadcrumb'
 import { CoWatchBar } from './components/CoWatchBar'
 import { Duplicates } from './components/Duplicates'
@@ -134,6 +134,7 @@ export default function App(): React.JSX.Element {
     resumePosition: true,
     resumeAfterPercent: 30,
     showContinue: true,
+    continueCount: CONTINUE_COUNT.default,
     resumeInSessions: true,
   })
 
@@ -1174,6 +1175,7 @@ export default function App(): React.JSX.Element {
         kind !== 'image' ? (
           <ContinueRow
             refreshKey={continueKey}
+            count={playback.continueCount}
             onOpen={(mediaId) => {
               const index = view.indexOf(mediaId)
               if (index !== null) openAt(index)
