@@ -1,8 +1,10 @@
 /*
- * Theme tokens. These are Midnight, the built-in dark theme, and what the app
- * looks like with no theme set. A theme overrides them from theme.ts, which
- * also works out every token a theme leaves out; the var() chains here only
- * describe the same fallbacks for anyone reading the stylesheet.
+ * Theme tokens. These are Midnight: the base every theme is worked out from,
+ * and what is on screen for the instant before theme.ts applies the real one.
+ * The default theme is Rosé, not this - a fresh install starts pink. A theme
+ * overrides these from theme.ts, which also works out every token a theme
+ * leaves out; the var() chains here only describe the same fallbacks for
+ * anyone reading the stylesheet.
  */
 :root {
   /* Base */
@@ -54,7 +56,7 @@
   --warn: #f0b23c;
   --warn-text: #f0c069;
   --warn-text-soft: #ffcf8b;
-  --live: var(--live);
+  --live: #4ad07a;
   --bar-base: #0e0e14;
   --list-active-hover: #ff5c8a38;
 
@@ -113,6 +115,44 @@ body {
   background: var(--bg);
   color: var(--text);
   overflow: hidden;
+}
+
+/*
+ * Scrollbars.
+ *
+ * Chromium's own are grey slabs that belong to no theme, and the app has enough
+ * scrolling boxes - the sidebar, the grid, a settings page, a menu, the
+ * continue row - that five of them can be on screen at once. These are thin and
+ * invisible at rest, and colour in only while the pointer is inside the box
+ * that scrolls, in the same pink every touchable thing in the chrome takes.
+ *
+ * `scrollbar-width` keeps the gutter reserved whether or not the thumb is
+ * showing, so nothing shifts when it appears. The colour is mixed into the page
+ * rather than given an alpha: a translucent thumb over a thumbnail reads as a
+ * smudge.
+ */
+/* `scrollbar-width` is not inherited, so it goes on every element rather than
+   the root; `scrollbar-color` is, so the root is enough for it. */
+* {
+  scrollbar-width: thin;
+}
+
+:root {
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
+  scrollbar-color: color-mix(in srgb, var(--icon) 45%, var(--bg)) transparent;
+}
+
+/*
+ * Per box, not per window. `scrollbar-color` inherits, so without this a hover
+ * anywhere handed the colour to every scrolling box inside the hovered element
+ * - pointing at the toolbar lit up the grid, the sidebar and any menu at once.
+ * Descendants the pointer is not actually inside are put back to transparent.
+ */
+*:hover :not(:hover) {
+  scrollbar-color: transparent transparent;
 }
 
 .app {
@@ -4120,6 +4160,13 @@ button.styling__reset:hover {
 
 .continue__row {
   display: flex;
+  /*
+   * Cards size to their own content, never to the row. Stretched instead, each
+   * card takes the row's height, the square frame's aspect-ratio turns that
+   * height back into width, and the widened cards grow the row again - a loop
+   * that ended with a 1100px row and no library underneath it.
+   */
+  align-items: flex-start;
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 12px;
@@ -4139,6 +4186,9 @@ button.styling__reset:hover {
 
 .continue__card {
   flex: 0 0 180px;
+  /* A flex item's automatic minimum is its content's min-content width, which
+     is what let the cards ignore the basis above. */
+  min-width: 0;
 }
 
 /* Taking a card off a list, beside the heart and drawn like it. */
