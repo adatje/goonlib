@@ -1,6 +1,6 @@
 {
   "name": "goonlib",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "private": true,
   "description": "Local-first desktop media library for images and video",
   "license": "Apache-2.0",

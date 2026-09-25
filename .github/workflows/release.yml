@@ -108,9 +108,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          # A draft, so the notes can be written before anyone sees it.
+          # A draft, so the notes can be written before anyone sees it, and a
+          # pre-release because that is what every GoonLib release is while the
+          # app is in beta - the updater is set to accept those and to walk past
+          # anything else, so a draft published without the mark is invisible to
+          # every installed copy.
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
-            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --title "GoonLib ${TAG#v}" --generate-notes
+            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --prerelease \
+                 --title "GoonLib ${TAG#v}" --generate-notes
           # The latest*.yml manifests and blockmaps are what the updater reads;
           # without them a published release is invisible to every installed copy.
           # Only latest*.yml: every platform also writes a builder-debug.yml, and
