@@ -107,6 +107,8 @@
     grid-template: minmax(0, 1fr) / minmax(0, 1fr); overflow: hidden;
   }
   .stage video, .stage img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  /* The picture is a play/pause target, and says so. */
+  .stage video { cursor: pointer; }
   .kinds-spacer { flex: 1; }
   .shuffle { display: inline-flex; align-items: center; justify-content: center; padding: 5px 9px; }
   .controls button.icon[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
@@ -1130,6 +1132,16 @@
     // duration a few frames longer than its last sample stalls on the final
     // frame instead, un-paused and going nowhere. Only un-paused playback
     // counts, so pausing on the last second is not mistaken for the end.
+    /*
+     * The end is reported once per playthrough, and this is what makes it a
+     * playthrough rather than a lifetime. Scrub back from the end, or let the
+     * host seek back, and the next end has to count too - otherwise nothing
+     * ever pauses the room again and it runs on past the end of the file.
+     */
+    if (isFinite(video.duration) && video.duration > 0 && video.currentTime < video.duration - 1) {
+      endedFor = null;
+    }
+
     if (video.seeking) {
       // A seek in flight moves the playhead on its own account; measuring
       // against it would read as either stuck or moving at random.
@@ -1377,19 +1389,52 @@
 
   var scrubbing = false;
 
-  $('play').addEventListener('click', function () {
+  /** Play or pause the room, from the button or from the picture itself. */
+  function togglePlay() {
     if (!state || state.playback.mediaId === null) return;
     if (!inControl()) { nudge(); return; }
     if (isRunning(state.playback)) {
       intent('pause', { positionMs: Math.round(video.currentTime * 1000) });
     } else {
+      /*
+       * A video sitting at its end starts again from the beginning, as every
+       * other player does. Without this the two sides fight: play() on an
+       * element whose playback has ended rewinds it to zero, while the room
+       * still says the position is the end, so the next sync seeks it back to
+       * the end, which ends it, which leaves it paused, which makes the sync
+       * play it again - a clip flicking between the start and the end twice a
+       * second, and never a pause, because the end had already been reported.
+       */
+      if (atEnd()) {
+        endedFor = null;
+        video.currentTime = 0;
+        intent('seek', { positionMs: 0 });
+      }
       // Take the click as permission while we still have it, rather than
       // waiting for the room to come back and finding the gesture expired.
       blocked = false;
       attemptPlay();
       intent('play');
     }
-  });
+  }
+
+  /** Whether the room's position is at the end of what is loaded. */
+  function atEnd() {
+    if (!state || !isFinite(video.duration) || video.duration <= 0) return false;
+    // The same half second the end-of-file check allows for: a container can
+    // declare a duration a few frames longer than its last sample.
+    return state.playback.positionMs >= video.duration * 1000 - 500;
+  }
+
+  $('play').addEventListener('click', togglePlay);
+
+  /*
+   * Clicking the picture does what clicking the button does, which is what
+   * every other player has taught people to expect. On the video itself rather
+   * than the stage around it: the queue card, the veil and the tap-for-sound
+   * button all sit in that stage, and none of them should be a pause.
+   */
+  video.addEventListener('click', togglePlay);
 
   $('autoplayNext').addEventListener('click', function () {
     autoplayNext = !autoplayNext;
