@@ -5079,3 +5079,13 @@ button.styling__reset:hover {
   flex-shrink: 0;
   color: var(--icon);
 }
+
+/* A hint that may be carrying something the app did not write - an updater
+   failure, say - and must not be allowed to grow the panel. */
+.settings__hint--clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}

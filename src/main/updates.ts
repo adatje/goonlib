@@ -56,6 +56,14 @@ class Updates {
     autoUpdater.autoInstallOnAppQuit = true
     autoUpdater.logger = null
 
+    /*
+     * Every GoonLib release is marked pre-release while the app is in beta.
+     * Left at its default, electron-updater walks the releases feed looking for
+     * one that is not, finds nothing, and reports that it cannot find a latest
+     * version at all - which reads as a broken updater rather than as a beta.
+     */
+    autoUpdater.allowPrerelease = true
+
     autoUpdater.on('checking-for-update', () => this.set({ kind: 'checking', version: app.getVersion() }))
     autoUpdater.on('update-not-available', () => this.set({ kind: 'none', version: app.getVersion() }))
     autoUpdater.on('update-available', (info) =>
@@ -77,7 +85,7 @@ class Updates {
       this.set({ kind: 'ready', version: app.getVersion(), newVersion: info.version }),
     )
     autoUpdater.on('error', (err) =>
-      this.set({ kind: 'error', version: app.getVersion(), message: err.message }),
+      this.set({ kind: 'error', version: app.getVersion(), message: summarise(err) }),
     )
 
     if (automatic) setTimeout(() => void this.check(), FIRST_CHECK_MS)
@@ -93,11 +101,7 @@ class Updates {
     try {
       await autoUpdater.checkForUpdates()
     } catch (err) {
-      this.set({
-        kind: 'error',
-        version: app.getVersion(),
-        message: err instanceof Error ? err.message : String(err),
-      })
+      this.set({ kind: 'error', version: app.getVersion(), message: summarise(err) })
     }
     return this.state
   }
@@ -112,11 +116,7 @@ class Updates {
     try {
       await autoUpdater.downloadUpdate()
     } catch (err) {
-      this.set({
-        kind: 'error',
-        version: app.getVersion(),
-        message: err instanceof Error ? err.message : String(err),
-      })
+      this.set({ kind: 'error', version: app.getVersion(), message: summarise(err) })
     }
     return this.state
   }
@@ -137,3 +137,28 @@ class Updates {
 }
 
 export const updates = new Updates()
+
+/** As much of a failure as is worth putting on screen. */
+const MAX_MESSAGE = 200
+
+/**
+ * Turns an updater failure into one line.
+ *
+ * electron-updater puts the whole HTTP response in the message when it cannot
+ * make sense of the releases feed - GitHub's headers alone run to several
+ * kilobytes of content-security-policy - and that went into the IPC message and
+ * out onto the settings panel verbatim. The first line is the part that says
+ * anything; the rest is kept out of the renderer entirely, and logged here for
+ * anyone actually debugging it.
+ */
+function summarise(err: unknown): string {
+  const full = err instanceof Error ? err.message : String(err)
+  console.error('[updates]', full)
+
+  const first = full.split('\n')[0]?.trim() ?? ''
+  // The response body is pasted in after the message proper, so anything that
+  // looks like the start of headers or a document ends the useful part.
+  const cut = first.split(/,\s*"?(?:content-type|date|server|status)"?:| XML: | HTML: /i)[0]?.trim() ?? first
+  const short = cut || full.slice(0, MAX_MESSAGE)
+  return short.length > MAX_MESSAGE ? `${short.slice(0, MAX_MESSAGE - 1)}…` : short
+}

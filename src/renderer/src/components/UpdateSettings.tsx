@@ -37,7 +37,12 @@ export function UpdateSettings(props: {
       {state.kind === 'unsupported' ? null : (
         <div className="settings__row settings__row--tight">
           <Action state={state} />
-          <span className="settings__hint">{describe(state)}</span>
+          <span
+            className="settings__hint settings__hint--clamp"
+            title={state.kind === 'error' ? (state.message ?? '') : undefined}
+          >
+            {describe(state)}
+          </span>
         </div>
       )}
     </div>
@@ -92,6 +97,24 @@ function Action({ state }: { state: UpdateState }): React.JSX.Element | null {
   }
 }
 
+/**
+ * An updater failure in words someone can act on.
+ *
+ * The two that actually happen get a sentence of their own; anything else
+ * falls through to what the updater said, which the main process has already
+ * cut down to one line. The full text is on the hint's tooltip either way.
+ */
+function failure(message: string | undefined): string {
+  const text = message ?? ''
+  if (/unable to find latest version|cannot parse releases feed|no published versions/i.test(text)) {
+    return 'There is nothing published to update to yet.'
+  }
+  if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|network|socket/i.test(text)) {
+    return 'Could not reach GitHub. Check your connection and try again.'
+  }
+  return text || 'That did not work.'
+}
+
 function describe(state: UpdateState): string {
   switch (state.kind) {
     case 'checking':
@@ -109,7 +132,7 @@ function describe(state: UpdateState): string {
       // an update but not become one.
       return `${state.newVersion} is out, but this build cannot install it itself - macOS only replaces signed apps.`
     case 'error':
-      return state.message ?? 'That did not work.'
+      return failure(state.message)
     default:
       return ''
   }
