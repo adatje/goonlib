@@ -464,28 +464,128 @@ export function sanitizeTheme(value: unknown): { theme: Theme; skipped: string[]
 
 // --- built-in themes ----------------------------------------------------------
 
+/**
+ * The base every other theme is worked out from: an empty theme, which resolves
+ * to the literals in MIDNIGHT_VALUES. It is offered as a theme in its own right
+ * as well, but it is no longer the one a fresh install starts on - see
+ * GOONLIB_DARK.
+ */
 export const MIDNIGHT: Theme = { name: 'Midnight', type: 'dark', colors: {} }
 
-export const DAYLIGHT: Theme = {
-  name: 'Daylight',
+/**
+ * The light side of the same design: the same rose, turned over.
+ *
+ * A pink that reads on a dark ground is invisible on a light one, so the accent
+ * goes deeper rather than lighter - #c9186a clears 4.5:1 against the ground and
+ * carries a white label at 5.5:1. The relationship between accent and favourite
+ * inverts with it: on the dark theme the heart is the lighter pink, here it is
+ * the brighter one at the same depth.
+ */
+export const GOONLIB_LIGHT: Theme = {
+  name: 'GoonLib Light',
   type: 'light',
   colors: {
-    background: '#f5f5f8',
-    foreground: '#1c1c24',
-    accent: '#6a5af9',
-    'foreground.muted': '#6c6c7a',
+    background: '#faf6f8',
+    foreground: '#241a20',
+    accent: '#c9186a',
+    'foreground.muted': '#6b5e66',
+    'accent.foreground': '#ffffff',
     'panel.background': '#ffffff',
-    'panel.border': '#dcdce4',
-    'button.background': '#ebebf1',
+    'panel.border': '#e7dde3',
+    'button.background': '#f3ecf0',
+    // A shade under the panel it sits on, so an input still reads as recessed
+    // where the panel is already white.
+    'input.background': '#f6f1f4',
+    'viewer.background': '#efe9ed',
+    danger: '#c02a2a',
+    success: '#15784b',
+    favorite: '#d6246b',
+  },
+}
+
+/**
+ * The default, and what GoonLib is meant to look like: pink accent, warm dark
+ * ground. It sets six keys and derives the rest, which is the whole point of
+ * the base-key rule - the pink flows through every tint, border and surface
+ * without any of them being written down.
+ */
+export const GOONLIB_DARK: Theme = {
+  name: 'GoonLib Dark',
+  type: 'dark',
+  colors: {
+    background: '#17111a',
+    foreground: '#f1e6ee',
+    accent: '#ff7eb0',
+    'foreground.muted': '#a8929f',
+    'accent.foreground': '#1b0d14',
+    favorite: '#ff9ec4',
+  },
+}
+
+/**
+ * After Rosé Pine Dawn (rosepinetheme.com), the light side of the palette this
+ * app's default is named for.
+ *
+ * Three roles are darkened from the source, hue and saturation kept: a palette
+ * built for syntax puts its pinks at 2.6-4.0:1 on its own paper, which is fine
+ * behind code and not fine for a label. `love` #b4637a becomes the accent at
+ * #ab526c, `subtle` #797593 becomes muted text at #6f6b89, and the border is
+ * pulled off `overlay`, which at 1.15:1 against the panel would have made every
+ * hairline in the app vanish.
+ */
+export const DAWN: Theme = {
+  name: 'Dawn',
+  type: 'light',
+  colors: {
+    background: '#faf4ed',
+    foreground: '#464261',
+    accent: '#ab526c',
+    'foreground.muted': '#6f6b89',
+    'accent.foreground': '#ffffff',
+    'panel.background': '#fffaf3',
+    'panel.border': '#e0d5ca',
+    'button.background': '#f2e9e1',
+    'input.background': '#fffaf3',
+    'viewer.background': '#f2e9e1',
+    danger: '#c2423c',
+    success: '#286983',
+    favorite: '#cb5e59',
+  },
+}
+
+/**
+ * After Catppuccin Latte (catppuccin.com), for a cooler light theme beside
+ * Dawn's warm paper.
+ *
+ * Latte's own `pink` is 2.3:1 on its base - a syntax colour, not a UI one - so
+ * the accent is that hue taken down to #c51e98, and the heart to #df2daf.
+ * `green` is darkened the same way for success; `text`, `subtext1`, `red` and
+ * the surfaces are the palette's own.
+ */
+export const LATTE: Theme = {
+  name: 'Latte',
+  type: 'light',
+  colors: {
+    background: '#eff1f5',
+    foreground: '#4c4f69',
+    accent: '#c51e98',
+    'foreground.muted': '#5c5f77',
+    'accent.foreground': '#ffffff',
+    'panel.background': '#ffffff',
+    'panel.border': '#ccd0da',
+    'button.background': '#e6e9ef',
     'input.background': '#ffffff',
-    'viewer.background': '#eeeef2',
-    danger: '#d93a3a',
-    success: '#1f9960',
-    favorite: '#e0356b',
+    'viewer.background': '#dce0e8',
+    danger: '#d20f39',
+    success: '#327c21',
+    favorite: '#df2daf',
   },
 }
 
 export const BUILT_IN_THEMES: Theme[] = [
+  // The two defaults, then the alternates: three dark, three light.
+  GOONLIB_DARK,
+  GOONLIB_LIGHT,
   MIDNIGHT,
   {
     name: 'OLED Black',
@@ -499,24 +599,13 @@ export const BUILT_IN_THEMES: Theme[] = [
       'viewer.background': '#000000',
     },
   },
-  {
-    name: 'Rosé',
-    type: 'dark',
-    colors: {
-      background: '#17111a',
-      foreground: '#f1e6ee',
-      accent: '#ff7eb0',
-      'foreground.muted': '#a8929f',
-      'accent.foreground': '#1b0d14',
-      favorite: '#ff9ec4',
-    },
-  },
-  DAYLIGHT,
+  DAWN,
+  LATTE,
 ]
 
-export const DEFAULT_LIGHT: Theme = DAYLIGHT
+export const DEFAULT_LIGHT: Theme = GOONLIB_LIGHT
 
-export const DEFAULT_THEME_CONFIG: ThemeConfig = { mode: 'dark', dark: MIDNIGHT, light: DEFAULT_LIGHT }
+export const DEFAULT_THEME_CONFIG: ThemeConfig = { mode: 'dark', dark: GOONLIB_DARK, light: DEFAULT_LIGHT }
 
 /** Picks the theme for the moment: the mode's, or the OS's when following it. */
 export function activeTheme(config: ThemeConfig, osPrefersDark: boolean): Theme {
