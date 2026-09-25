@@ -223,6 +223,36 @@ export interface MediaPage {
   totalBytes: number
 }
 
+/**
+ * What a view is made of, for the card behind the toolbar's disc.
+ *
+ * Both splits describe the same set of items - whatever the grid is showing at
+ * the time, narrowed exactly as the grid is narrowed - so the totals here are
+ * the ones beside the disc, not a second opinion about the library.
+ */
+export interface LibraryBreakdown {
+  total: { items: number; bytes: number }
+  /** Per source, biggest first. `name` is the source folder's own name. */
+  roots: Array<{
+    rootId: number
+    name: string
+    items: number
+    bytes: number
+    /**
+     * The folders one level below wherever the grid is standing, biggest
+     * first. An empty `name` is the loose files at that level, filed nowhere.
+     */
+    folders: Array<{ name: string; items: number; bytes: number }>
+  }>
+  /** Per media kind, biggest first, each split by the file types inside it. */
+  kinds: Array<{
+    kind: MediaKind
+    items: number
+    bytes: number
+    exts: Array<{ ext: string; items: number; bytes: number }>
+  }>
+}
+
 export type ScanPhase =
   | 'idle'
   | 'walking'
@@ -1007,6 +1037,8 @@ export const IPC = {
   foldersCount: 'folders:count',
   foldersMove: 'folders:move',
   mediaMoveTo: 'media:move-to',
+  mediaRename: 'media:rename',
+  libraryBreakdown: 'library:breakdown',
   mediaFavoriteCount: 'media:favorite-count',
   updatesStatus: 'updates:status',
   updatesCheck: 'updates:check',
@@ -1056,6 +1088,8 @@ export interface GoonLibApi {
      * loaded. Ids only, so this stays cheap on a large library.
      */
     ids(query: Omit<MediaQuery, 'limit' | 'offset'>): Promise<number[]>
+    /** What the same query is made of, split by source and by kind. */
+    breakdown(query: Omit<MediaQuery, 'limit' | 'offset'>): Promise<LibraryBreakdown>
   }
   folders: {
     /** Immediate subfolders of `path` within a root. Pass '' for the top level. */
@@ -1164,6 +1198,11 @@ export interface GoonLibApi {
     move(mediaIds: number[]): Promise<MoveResult>
     /** Moves items into a folder already in the library, with no dialog. */
     moveTo(mediaIds: number[], rootId: number, path: string): Promise<FolderActionResult>
+    /**
+     * Renames one item's file where it stands. `stem` is the name without its
+     * extension; the extension the file already has is kept.
+     */
+    rename(mediaId: number, stem: string): Promise<FolderActionResult>
     /**
      * Favorites or unfavorites items. Resolves with how many changed; items
      * already in the requested state are left alone, timestamp included.

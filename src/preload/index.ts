@@ -35,6 +35,7 @@ import type {
   MediaFileAction,
   MediaItem,
   MediaViews,
+  LibraryBreakdown,
   MediaPage,
   MoveResult,
   MediaQuery,
@@ -85,6 +86,8 @@ const api: GoonLibApi = {
     get: (id: number): Promise<MediaItem | null> => ipcRenderer.invoke(IPC.mediaGet, id),
     ids: (query: Omit<MediaQuery, 'limit' | 'offset'>): Promise<number[]> =>
       ipcRenderer.invoke(IPC.mediaIds, query),
+    breakdown: (query: Omit<MediaQuery, 'limit' | 'offset'>): Promise<LibraryBreakdown> =>
+      ipcRenderer.invoke(IPC.libraryBreakdown, query),
   },
   folders: {
     children: (rootId: number, path: string): Promise<FolderNode[]> =>
@@ -138,6 +141,8 @@ const api: GoonLibApi = {
       ipcRenderer.invoke(IPC.mediaMove, mediaIds),
     moveTo: (mediaIds: number[], rootId: number, path: string): Promise<FolderActionResult> =>
       ipcRenderer.invoke(IPC.mediaMoveTo, mediaIds, rootId, path),
+    rename: (mediaId: number, stem: string): Promise<FolderActionResult> =>
+      ipcRenderer.invoke(IPC.mediaRename, mediaId, stem),
     favoriteCount: (mediaIds: number[]): Promise<number> =>
       ipcRenderer.invoke(IPC.mediaFavoriteCount, mediaIds),
     favorite: (mediaIds: number[], favorite: boolean): Promise<number> =>

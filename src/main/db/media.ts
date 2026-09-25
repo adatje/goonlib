@@ -1,4 +1,5 @@
 import type {
+  LibraryBreakdown,
   MediaItem,
   MediaKind,
   MediaPage,
@@ -514,6 +515,126 @@ export function listMedia(query: MediaQuery): MediaPage {
     .all(...params, query.limit, query.offset)
 
   return { items: rows.map(toMediaItem), total: totalRow?.n ?? 0, totalBytes: totalRow?.bytes ?? 0 }
+}
+
+/**
+ * What the current view is made of, split by where it lives and what it is.
+ *
+ * It runs the same builder as `listMedia`, so its totals are the ones already
+ * on screen rather than a second opinion about the library - a breakdown that
+ * disagreed with the count above it would be worse than none.
+ *
+ * One pass groups by all four dimensions at once and the views are folded out
+ * of the same rows, because they are four readings of one set of items rather
+ * than four questions. The row count stays small: it is sources times their
+ * top folders times kinds times extensions, and every one of those is bounded
+ * by what a person actually keeps.
+ *
+ * Folders are the level below wherever you are standing, not the level below
+ * the source. Opening a folder and asking what is in it should answer about
+ * that folder's own subfolders; anything else would show one row holding
+ * everything, which is the number already on screen.
+ */
+export function mediaBreakdown(query: MediaQuery): LibraryBreakdown {
+  const { from, clause, params } = buildMediaQuery(query)
+
+  // The prefix is a folder path ending in '/', so its length is where the part
+  // below it starts. Interpolated rather than bound because it goes in the
+  // SELECT, whose parameters would come before every one the WHERE clause
+  // already holds - and because a length is a number this function computed,
+  // never text that came from outside.
+  const below = Math.max(0, Math.floor((query.pathPrefix ?? '').length))
+  const rest = `substr(m.rel_path, ${below + 1})`
+
+  const rows = getDb()
+    .prepare<
+      unknown[],
+      {
+        rootId: number
+        rootPath: string
+        folder: string
+        kind: MediaKind
+        ext: string
+        n: number
+        bytes: number | null
+      }
+    >(
+      `SELECT m.root_id AS rootId, r.path AS rootPath, m.kind AS kind, m.ext AS ext,
+              CASE WHEN instr(${rest}, '/') > 0
+                   THEN substr(${rest}, 1, instr(${rest}, '/') - 1)
+                   ELSE '' END AS folder,
+              COUNT(*) AS n, SUM(m.size) AS bytes
+         ${from} ${clause}
+        GROUP BY m.root_id, folder, m.kind, m.ext`,
+    )
+    .all(...params)
+
+  const roots = new Map<number, RootTally>()
+  const kinds = new Map<MediaKind, KindTally>()
+  const total = { items: 0, bytes: 0 }
+
+  for (const row of rows) {
+    const bytes = row.bytes ?? 0
+
+    const root =
+      roots.get(row.rootId) ??
+      {
+        rootId: row.rootId,
+        name: row.rootPath.split('/').filter(Boolean).pop() ?? row.rootPath,
+        items: 0,
+        bytes: 0,
+        folders: new Map<string, { name: string; items: number; bytes: number }>(),
+      }
+    root.items += row.n
+    root.bytes += bytes
+    // '' is the source's own floor: files sitting loose rather than filed.
+    const folder = root.folders.get(row.folder) ?? { name: row.folder, items: 0, bytes: 0 }
+    folder.items += row.n
+    folder.bytes += bytes
+    root.folders.set(row.folder, folder)
+    roots.set(row.rootId, root)
+
+    const kind = kinds.get(row.kind) ?? { kind: row.kind, items: 0, bytes: 0, exts: new Map() }
+    kind.items += row.n
+    kind.bytes += bytes
+    const ext = kind.exts.get(row.ext) ?? { ext: row.ext, items: 0, bytes: 0 }
+    ext.items += row.n
+    ext.bytes += bytes
+    kind.exts.set(row.ext, ext)
+    kinds.set(row.kind, kind)
+
+    total.items += row.n
+    total.bytes += bytes
+  }
+
+  // Biggest first at every level: the card is read for where the room went.
+  const bySize = <T extends { bytes: number }>(a: T, b: T): number => b.bytes - a.bytes
+
+  return {
+    total,
+    roots: [...roots.values()]
+      .sort(bySize)
+      .map((root) => ({ ...root, folders: [...root.folders.values()].sort(bySize) })),
+    kinds: [...kinds.values()]
+      .sort(bySize)
+      .map((kind) => ({ ...kind, exts: [...kind.exts.values()].sort(bySize) })),
+  }
+}
+
+/** Working shapes, with the children still in maps rather than sorted arrays. */
+interface RootTally {
+  rootId: number
+  name: string
+  items: number
+  bytes: number
+  folders: Map<string, { name: string; items: number; bytes: number }>
+}
+
+interface KindTally {
+  kind: MediaKind
+  items: number
+  bytes: number
+  exts: Map<string, { ext: string; items: number; bytes: number }>
 }
 
 /**

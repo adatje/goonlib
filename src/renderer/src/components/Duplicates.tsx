@@ -128,6 +128,21 @@ export function Duplicates({ onChanged }: DuplicatesProps): React.JSX.Element {
 
   const reclaimable = groups.reduce((total, group) => total + group.reclaimable, 0)
 
+  /*
+   * The hearted copies standing in for the largest.
+   *
+   * In those groups the biggest file is the one going to the Trash, which is
+   * worth saying out loud rather than leaving to be noticed. Counted rather
+   * than assumed: a copy only belongs here if it is favourited and really is
+   * unselected right now.
+   */
+  const keptFavorites = new Set<number>()
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (item.favoritedAt !== null && !selected.has(item.id)) keptFavorites.add(item.id)
+    }
+  }
+
   return (
     <div className="dupes">
       <div className="dupes__bar">
@@ -150,6 +165,17 @@ export function Duplicates({ onChanged }: DuplicatesProps): React.JSX.Element {
         {selected.size > 0 ? (
           <span className="muted">
             {formatCount(selected.size)} selected · {formatBytes(selectedBytes)}
+            {keptFavorites.size > 0 ? (
+              <>
+                {' · '}
+                <span
+                  className="dupes__spared"
+                  title="A hearted copy is the one kept, in place of the largest. Untick it to include it instead."
+                >
+                  {formatCount(keptFavorites.size)} favourites preserved
+                </span>
+              </>
+            ) : null}
           </span>
         ) : null}
 
@@ -171,7 +197,7 @@ export function Duplicates({ onChanged }: DuplicatesProps): React.JSX.Element {
           className="button button--quiet"
           disabled={busy}
           onClick={() => selectAllButLargest(groups)}
-          title="Marks every copy except the largest in each group, so one of everything is left behind"
+          title="Marks every copy but one in each group, so one of everything is left behind. The one kept is the largest, or the hearted copy where there is one."
         >
           Select all duplicates
         </button>

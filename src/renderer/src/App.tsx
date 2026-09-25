@@ -199,6 +199,7 @@ export default function App(): React.JSX.Element {
   const selection = useSelection(view)
 
   const scanning = progress !== null && ACTIVE_PHASES.has(progress.phase)
+  const [duplicateCount, setDuplicateCount] = useState<number | null>(null)
 
   // A selection only means anything against the list it was made in. Changing
   // folder, collection, tag, search or sort leaves you looking at different
@@ -229,6 +230,29 @@ export default function App(): React.JSX.Element {
     const timer = setTimeout(() => setNotice(null), 3500)
     return () => clearTimeout(timer)
   }, [notice])
+
+  /*
+   * The count on the sidebar's duplicates button.
+   *
+   * Taken once at startup, again whenever a scan finishes - which is the only
+   * thing that can create duplicates - and again on leaving the duplicates
+   * page, since that is where they get removed. Deliberately not part of
+   * refreshSidebar: that runs after every small change, and this walks every
+   * hash in the library.
+   */
+  useEffect(() => {
+    if (scanning || mode === 'duplicates') return
+    let live = true
+    void window.goonlib.duplicates
+      .find()
+      .then((report) => {
+        if (live) setDuplicateCount(report.exact.length + report.near.length)
+      })
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+  }, [scanning, mode])
 
   const refreshSidebar = useCallback(async () => {
     try {
@@ -1111,6 +1135,7 @@ export default function App(): React.JSX.Element {
         onSelectFavorites={selectFavorites}
         mode={mode}
         onSelectMode={setMode}
+        duplicates={duplicateCount}
         onAddRoot={() => void addRoot()}
         onRemoveRoot={removeRoot}
         onToggleRoot={toggleRoot}
@@ -1159,6 +1184,7 @@ export default function App(): React.JSX.Element {
               onSortChange={chooseSort}
               total={view.total}
               totalBytes={view.totalBytes}
+              query={filters}
               allowManualSort={collectionId !== null}
               filters={chosen}
               onFiltersChange={setChosen}

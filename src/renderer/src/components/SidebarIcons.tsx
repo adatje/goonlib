@@ -305,3 +305,13 @@ export function DownloadIcon(): React.JSX.Element {
     </Icon>
   )
 }
+
+/** Duplicates: one square laid over another, the same shape twice. */
+export function CopiesIcon(): React.JSX.Element {
+  return (
+    <Icon>
+      <rect x="2.2" y="2.2" width="8.2" height="8.2" rx="1.4" />
+      <path d="M5.6 13.8h7c.7 0 1.2-.5 1.2-1.2v-7" />
+    </Icon>
+  )
+}

@@ -6,7 +6,14 @@ import { clampInt } from '@shared/num'
 import { IPC } from '@shared/types'
 import { collectionTags, setCollectionTags } from './db/collections'
 import { updates } from './updates'
-import { countBeneath, createFolder, deleteFolder, moveFolderContents, moveMediaTo } from './folderactions'
+import {
+  countBeneath,
+  createFolder,
+  deleteFolder,
+  moveFolderContents,
+  moveMediaTo,
+  renameMedia,
+} from './folderactions'
 import { countFavorites } from './db/favorites'
 import type { Theme, ThemeMode, ThemeType } from '@shared/theme'
 import type {
@@ -21,6 +28,7 @@ import type {
   Collection,
   DuplicateReport,
   FolderNode,
+  LibraryBreakdown,
   LibraryStats,
   MediaAnnotations,
   MediaExif,
@@ -69,6 +77,7 @@ import {
   listExtensions,
   listMedia,
   listMediaIds,
+  mediaBreakdown,
   relocateMedia,
 } from './db/media'
 import { containingRoot, moveFile, relPathFor, uniqueName } from './relocate'
@@ -145,6 +154,9 @@ handle(IPC.mediaFavoriteCount, (_event, mediaIds: number[]): number =>
   handle(IPC.foldersMove, (_event, rootId: number, path: string, toRoot: number, toPath: string) =>
     moveFolderContents(Number(rootId), String(path), Number(toRoot), String(toPath)),
   )
+  handle(IPC.mediaRename, (_event, mediaId: number, stem: string) =>
+    renameMedia(Number(mediaId), String(stem)),
+  )
 
   handle(IPC.updatesStatus, (): UpdateState => updates.current())
   handle(IPC.updatesCheck, (): Promise<UpdateState> => updates.check())
@@ -189,6 +201,10 @@ handle(IPC.mediaFavoriteCount, (_event, mediaIds: number[]): number =>
       limit: clampInt(query.limit, 1, MAX_PAGE),
       offset: Math.max(0, Math.floor(query.offset)),
     }),
+  )
+
+  handle(IPC.libraryBreakdown, (_event, query: MediaQuery): LibraryBreakdown =>
+    mediaBreakdown({ ...query, limit: 0, offset: 0 }),
   )
 
   handle(IPC.mediaGet, (_event, id: number): MediaItem | null => getMedia(id))

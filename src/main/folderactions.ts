@@ -17,10 +17,10 @@ import { dirname, join } from 'node:path'
 import type { FolderActionResult } from '@shared/types'
 import { getDb } from './db/index'
 import { escapeLike } from './db/folders'
-import { markMissing } from './db/media'
+import { markMissing, relocateMedia } from './db/media'
 import { getMediaLocation, listRoots, removeRoot } from './db/queries'
 import { resolveWithinRoot } from './protocol/confine'
-import { containingRoot, uniqueName } from './relocate'
+import { containingRoot, moveFile, uniqueName } from './relocate'
 import { trashHistory } from './trash'
 
 /** One item under a folder, with the absolute path it lives at. */
@@ -185,6 +185,79 @@ export async function moveFolderContents(
   const items = await itemsBeneath(rootId, relPath)
   if (items.length === 0) return { ...EMPTY, ok: true, message: 'Nothing in there to move.' }
   return moveInto(items, targetRootId, targetRelPath)
+}
+
+/**
+ * Renames one item's file, leaving it where it is.
+ *
+ * Only the stem changes. The extension comes from the file itself rather than
+ * from what was typed, because it is what tells the app and the system what the
+ * file is, and a bad download name is no reason to turn a video into something
+ * else. A name typed with the extension already on it keeps just the one.
+ *
+ * Nothing is made unique here, unlike a move. A move is bulk and unattended, so
+ * a clash is worked around silently; a rename is one deliberate name, and
+ * quietly handing back "clip (2).mp4" would not be the name that was asked for.
+ */
+export async function renameMedia(mediaId: number, stem: string): Promise<FolderActionResult> {
+  const row = getDb()
+    .prepare(
+      `SELECT m.root_id AS rootId, m.rel_path AS relPath, r.path AS rootPath
+         FROM media m
+         JOIN roots r ON r.id = m.root_id
+        WHERE m.id = ?`,
+    )
+    .get(mediaId) as { rootId: number; relPath: string; rootPath: string } | undefined
+  if (!row) return { ...EMPTY, message: 'That item is not in the library any more.' }
+
+  const from = await resolveWithinRoot(row.rootPath, row.relPath)
+  if (!from) return { ...EMPTY, message: 'That file is not there any more.' }
+
+  const clean = stem.trim().replace(/[/\\]/g, '')
+  if (!clean || clean === '.' || clean === '..') {
+    return { ...EMPTY, message: 'That is not a name a file can have.' }
+  }
+
+  const current = row.relPath.split('/').pop() ?? row.relPath
+  const dot = current.lastIndexOf('.')
+  const ext = dot > 0 ? current.slice(dot) : ''
+  const name = clean.toLowerCase().endsWith(ext.toLowerCase()) ? clean : `${clean}${ext}`
+  if (name === current) return { ...EMPTY, ok: true }
+
+  const dir = dirname(from)
+  const to = join(dir, name)
+
+  let taken: Set<string>
+  try {
+    taken = new Set((await readdir(dir)).map((entry) => entry.toLowerCase()))
+  } catch (err) {
+    return { ...EMPTY, message: err instanceof Error ? err.message : String(err) }
+  }
+  // The file does not clash with itself, which is what makes a change of case
+  // alone - "clip.mp4" to "Clip.mp4" - a rename rather than a refusal.
+  taken.delete(current.toLowerCase())
+  if (taken.has(name.toLowerCase())) {
+    return { ...EMPTY, message: `"${name}" is already there.` }
+  }
+
+  try {
+    if (to.toLowerCase() === from.toLowerCase()) {
+      // Only the case moved. A case-insensitive filesystem reports the
+      // destination as already existing, because it is this very file.
+      await rename(from, to)
+    } else {
+      // Checks again on its way past, so nothing that appeared in the moment
+      // since the listing gets overwritten.
+      await moveFile(from, to)
+    }
+  } catch (err) {
+    return { ...EMPTY, message: err instanceof Error ? err.message : String(err) }
+  }
+
+  const cut = row.relPath.lastIndexOf('/')
+  const relDir = cut === -1 ? '' : row.relPath.slice(0, cut)
+  relocateMedia(mediaId, row.rootId, relDir === '' ? name : `${relDir}/${name}`, name)
+  return { ...EMPTY, ok: true, renamed: 1 }
 }
 
 /** The same move, for a set of items picked by hand rather than a whole folder. */

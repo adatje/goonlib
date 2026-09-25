@@ -48,6 +48,8 @@ export interface MediaMenuProps {
  */
 export function MediaMenu(props: MediaMenuProps): React.JSX.Element | null {
   const [picking, setPicking] = useState(false)
+  const [renaming, setRenaming] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
   const { at, item, onClose, onChanged } = props
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [memberOf, setMemberOf] = useState<ReadonlySet<number>>(new Set())
@@ -93,7 +95,7 @@ export function MediaMenu(props: MediaMenuProps): React.JSX.Element | null {
   // rather than clipped.
   const place = useMemo(() => {
     const width = 230
-    const height = 330
+    const height = 360
     return {
       left: Math.max(8, Math.min(at.x, window.innerWidth - width - 8)),
       top: Math.max(8, Math.min(at.y, window.innerHeight - height - 8)),
@@ -110,6 +112,59 @@ export function MediaMenu(props: MediaMenuProps): React.JSX.Element | null {
         if (done && kind === 'trash') onChanged()
       })
       .catch(() => undefined)
+  }
+
+  if (renaming !== null) {
+    const stem = stemOf(item)
+
+    return (
+      <div className="mediamenu" style={place} ref={shellRef} role="dialog" aria-label={`Rename ${item.name}`}>
+        <form
+          className="mediamenu__form"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setBusy(true)
+            void window.goonlib.media
+              .rename(item.id, renaming)
+              .then((result) => {
+                if (result.message) props.onMessage?.(result.message)
+                // A refused name leaves the box open with what was typed still
+                // in it, so it can be corrected rather than retyped.
+                if (!result.ok) return
+                onChanged()
+                onClose()
+              })
+              .catch((err: unknown) => props.onMessage?.(err instanceof Error ? err.message : String(err)))
+              .finally(() => setBusy(false))
+          }}
+        >
+          <span className="mediamenu__head">Rename</span>
+          <input
+            className="collection__input"
+            value={renaming}
+            autoFocus
+            placeholder="Name"
+            onChange={(event) => setRenaming(event.target.value)}
+            onFocus={(event) => event.currentTarget.select()}
+          />
+          {/* The extension is not in the box and not up for editing: it is what
+              says what the file is, and this menu is for fixing a bad name. */}
+          <span className="settings__hint">Keeps {item.ext || 'its extension'}</span>
+          <div className="settings__row settings__row--tight">
+            <button
+              type="submit"
+              className="button button--primary"
+              disabled={busy || !renaming.trim() || renaming === stem}
+            >
+              Rename
+            </button>
+            <button type="button" className="button button--quiet" onClick={onClose}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    )
   }
 
   if (picking) {
@@ -227,6 +282,15 @@ export function MediaMenu(props: MediaMenuProps): React.JSX.Element | null {
 
       <div className="mediamenu__rule" role="separator" />
 
+      <button
+        type="button"
+        className="mediamenu__item"
+        role="menuitem"
+        onClick={() => setRenaming(stemOf(item))}
+      >
+        Rename…
+      </button>
+
       <button type="button" className="mediamenu__item" role="menuitem" onClick={() => setPicking(true)}>
         Move to folder…
       </button>
@@ -247,4 +311,17 @@ export function MediaMenu(props: MediaMenuProps): React.JSX.Element | null {
       </button>
     </div>
   )
+}
+
+/**
+ * The part of a filename worth editing.
+ *
+ * The extension is left out of the box entirely rather than shown and guarded:
+ * it is what says what the file is, and every name this menu exists to fix is
+ * wrong in the stem.
+ */
+function stemOf(item: MediaItem): string {
+  return item.ext && item.name.toLowerCase().endsWith(item.ext.toLowerCase())
+    ? item.name.slice(0, -item.ext.length)
+    : item.name
 }

@@ -12,7 +12,12 @@ import { markAllButLargest, rangeBetween } from '../src/renderer/src/selection'
  * A group of `[id, size]` pairs, largest first as buildGroup leaves them.
  * `favorites` are the ids the user has hearted.
  */
-function group(key: string, items: [number, number][], favorites: number[] = []): DuplicateGroup {
+function group(
+  key: string,
+  items: [number, number][],
+  favorites: number[] = [],
+  names: Record<number, string> = {},
+): DuplicateGroup {
   return {
     key,
     kind: 'exact',
@@ -21,7 +26,14 @@ function group(key: string, items: [number, number][], favorites: number[] = [])
       .sort((a, b) => b[1] - a[1])
       .map(
         ([id, size]) =>
-          ({ id, size, favoritedAt: favorites.includes(id) ? 1 : null }) as MediaItem,
+          ({
+            id,
+            size,
+            // Plain by default, so only the tests that care about copy
+            // suffixes have to say anything about names.
+            name: names[id] ?? `${id}.webm`,
+            favoritedAt: favorites.includes(id) ? 1 : null,
+          }) as MediaItem,
       ),
     reclaimable: 0,
   }
@@ -125,7 +137,7 @@ describe('markAllButLargest', () => {
     }
   })
 
-  it('never marks a favorite, even one that is not the largest', () => {
+  it('keeps the favorite instead of the largest, not as well as it', () => {
     const a = group(
       'a',
       [
@@ -136,7 +148,81 @@ describe('markAllButLargest', () => {
       [2],
     )
 
-    expect(ids(markAllButLargest(new Set(), [a], [a]))).toEqual([3])
+    // 2 is hearted, so it is the copy that survives and the largest goes with
+    // the rest. Sparing both left two standing, which is not "all but one".
+    expect(ids(markAllButLargest(new Set(), [a], [a]))).toEqual([1, 3])
+  })
+
+  it('keeps every favorite in a group', () => {
+    const a = group(
+      'a',
+      [
+        [1, 300],
+        [2, 200],
+        [3, 100],
+      ],
+      [2, 3],
+    )
+
+    expect(ids(markAllButLargest(new Set(), [a], [a]))).toEqual([1])
+  })
+
+  it('leaves a group of nothing but favorites alone', () => {
+    const a = group(
+      'a',
+      [
+        [1, 300],
+        [2, 200],
+      ],
+      [1, 2],
+    )
+
+    expect(ids(markAllButLargest(new Set(), [a], [a]))).toEqual([])
+  })
+
+  it('keeps the unsuffixed name over a "(1)" of the same size', () => {
+    const a = group(
+      'a',
+      [
+        [1, 300],
+        [2, 300],
+        [3, 300],
+      ],
+      [],
+      { 1: 'clip (1).webm', 2: 'clip (1).webm', 3: 'clip.webm' },
+    )
+
+    // Equal sizes leave the largest-first order to break the tie, which used
+    // to hand it to whichever suffixed copy happened to sort first.
+    expect(ids(markAllButLargest(new Set(), [a], [a]))).toEqual([1, 2])
+  })
+
+  it('falls back to the largest when every name is a copy', () => {
+    const a = group(
+      'a',
+      [
+        [1, 300],
+        [2, 200],
+      ],
+      [],
+      { 1: 'clip (1).webm', 2: 'clip copy.webm' },
+    )
+
+    expect(ids(markAllButLargest(new Set(), [a], [a]))).toEqual([2])
+  })
+
+  it('lets a favorite outrank a plain name', () => {
+    const a = group(
+      'a',
+      [
+        [1, 300],
+        [2, 200],
+      ],
+      [2],
+      { 1: 'clip.webm', 2: 'clip (1).webm' },
+    )
+
+    expect(ids(markAllButLargest(new Set(), [a], [a]))).toEqual([1])
   })
 
   it('is idempotent', () => {

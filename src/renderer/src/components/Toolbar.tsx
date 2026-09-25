@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { MediaKind, MediaSort, Tag } from '@shared/types'
+import type { MediaKind, MediaQuery, MediaSort, Tag } from '@shared/types'
 import { Filters } from './Filters'
 import type { FilterSet } from './Filters'
 import { formatBytes, formatCount } from '../format'
 import { DownloadIcon, ImageIcon, LibraryIcon, SearchIcon, SortIcon, StorageIcon, VideoIcon } from './SidebarIcons'
 import type { ToyView } from '../state/useToy'
+import { StorageCard } from './StorageCard'
 import { ToyChip } from './ToyChip'
 
 export interface ToolbarProps {
@@ -17,6 +18,8 @@ export interface ToolbarProps {
   total: number
   /** Combined size of what `total` counts, in bytes. */
   totalBytes: number
+  /** The grid's own query, so the breakdown card can describe the same items. */
+  query: Omit<MediaQuery, 'limit' | 'offset'>
   /** True when viewing a collection, which is the only context with a saved order. */
   allowManualSort?: boolean
   /** What the grid is narrowed by, and everything it could be narrowed by. */
@@ -117,6 +120,7 @@ const MANUAL_SORT = { value: 'manual' as const, label: 'Custom order' }
 
 export function Toolbar(props: ToolbarProps): React.JSX.Element {
   const scrapeMode = looksLikeUrl(props.search)
+  const [breakdown, setBreakdown] = useState<{ x: number; y: number } | null>(null)
 
   return (
     <div className="toolbar">
@@ -131,7 +135,9 @@ export function Toolbar(props: ToolbarProps): React.JSX.Element {
         <input
           type="search"
           className={scrapeMode ? 'toolbar__search toolbar__search--url' : 'toolbar__search'}
-          placeholder="Search / Download media items"
+          // Just "Search": pasting a link works, but it is a back pocket
+          // feature, not one worth spending the box's only line of text on.
+          placeholder="Search"
           value={props.search}
           onChange={(event) => props.onSearchChange(event.target.value)}
           onKeyDown={(event) => {
@@ -180,12 +186,31 @@ export function Toolbar(props: ToolbarProps): React.JSX.Element {
 
       {props.toy.live ? <ToyChip toy={props.toy} /> : null}
 
-      {/* The glyph is the divider: how many, then what they weigh. */}
+      {/* The glyph is the divider: how many, then what they weigh. And it is
+          the way in to the breakdown, since it is already the thing standing
+          between the two numbers it would explain. */}
       <span className="toolbar__count">
         {formatCount(props.total)} items
-        <StorageIcon />
+        <button
+          type="button"
+          className={breakdown ? 'toolbar__breakdown is-open' : 'toolbar__breakdown'}
+          onClick={(event) => {
+            const box = event.currentTarget.getBoundingClientRect()
+            setBreakdown(breakdown ? null : { x: box.right, y: box.bottom })
+          }}
+          aria-expanded={breakdown !== null}
+          aria-haspopup="dialog"
+          title="What this is made of"
+        >
+          <StorageIcon />
+          <span className="visually-hidden">What this is made of</span>
+        </button>
         {formatBytes(props.totalBytes)}
       </span>
+
+      {breakdown ? (
+        <StorageCard query={props.query} at={breakdown} onClose={() => setBreakdown(null)} />
+      ) : null}
     </div>
   )
 }

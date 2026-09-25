@@ -9,7 +9,7 @@ import markSound4 from '../assets/mark-4.mp3'
 import markSound5 from '../assets/mark-5.mp3'
 import { CollectionList } from './CollectionList'
 import { FolderTree } from './FolderTree'
-import { DescriptionIcon, FolderIcon, LibraryIcon, ScanIcon, SourcesIcon } from './SidebarIcons'
+import { CopiesIcon, DescriptionIcon, FolderIcon, LibraryIcon, ScanIcon, SourcesIcon } from './SidebarIcons'
 import { SidebarSection } from './SidebarSection'
 import { TagList } from './TagList'
 import { GearIcon, HeartIcon } from './Toolbar'
@@ -46,6 +46,11 @@ export interface SidebarProps {
   onDeleteTag: (tag: Tag) => void
   /** A scan is running, so Rescan waits for it. */
   scanning: boolean
+  /**
+   * How many duplicate groups the last look found, or null before one has been
+   * taken. Zero is a real answer and worth showing as nothing rather than 0.
+   */
+  duplicates: number | null
   /** Looks for new, changed and removed files in every source. */
   onRescan: () => void
   /** Opens the card listing every keyboard shortcut. */
@@ -226,6 +231,28 @@ export function Sidebar(props: SidebarProps): React.JSX.Element {
           <ScanIcon />
           <span className="visually-hidden">{props.scanning ? 'Scanning' : 'Rescan'}</span>
         </button>
+        {/* Beside Rescan, because both are about the state of the library on
+            disk rather than about what is on screen. The count is inline
+            rather than a corner badge: it can reach three figures, which a
+            badge cannot hold, and duplicates are a tidying job rather than an
+            alarm. */}
+        <button
+          type="button"
+          className={
+            props.mode === 'duplicates'
+              ? 'icon-button icon-button--on sidebar__dupes'
+              : 'icon-button sidebar__dupes'
+          }
+          onClick={() => props.onSelectMode('duplicates')}
+          title={duplicatesTitle(props.duplicates)}
+        >
+          <CopiesIcon />
+          {props.duplicates ? (
+            <span className="sidebar__dupes-count">{formatCount(props.duplicates)}</span>
+          ) : null}
+          <span className="visually-hidden">Duplicates</span>
+        </button>
+
         <button
           type="button"
           className="icon-button sidebar__help"
@@ -259,6 +286,13 @@ export function Sidebar(props: SidebarProps): React.JSX.Element {
 function basename(path: string): string {
   const parts = path.split('/').filter(Boolean)
   return parts[parts.length - 1] ?? path
+}
+
+/** What the duplicates button says on hover, which depends on whether it knows yet. */
+function duplicatesTitle(count: number | null): string {
+  if (count === null) return 'Duplicates: still looking'
+  if (count === 0) return 'Duplicates: none found'
+  return `Duplicates: ${count === 1 ? '1 group' : `${count} groups`} found`
 }
 
 /** What the gear says on hover: Settings, and anything it is lit up about. */
