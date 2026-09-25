@@ -7,6 +7,7 @@ import { IPC } from '@shared/types'
 import { collectionTags, setCollectionTags } from './db/collections'
 import { updates } from './updates'
 import { countBeneath, createFolder, deleteFolder, moveFolderContents, moveMediaTo } from './folderactions'
+import { countFavorites } from './db/favorites'
 import type { Theme, ThemeMode, ThemeType } from '@shared/theme'
 import type {
   AiSettings,
@@ -134,7 +135,11 @@ export function registerIpc(): void {
   handle(IPC.foldersDelete, (_event, rootId: number, path: string) =>
     deleteFolder(Number(rootId), String(path)),
   )
-  handle(IPC.mediaMoveTo, (_event, mediaIds: number[], rootId: number, path: string) =>
+handle(IPC.mediaFavoriteCount, (_event, mediaIds: number[]): number =>
+    countFavorites((mediaIds ?? []).map(Number)),
+  )
+
+    handle(IPC.mediaMoveTo, (_event, mediaIds: number[], rootId: number, path: string) =>
     moveMediaTo(mediaIds.map(Number), Number(rootId), String(path)),
   )
   handle(IPC.foldersMove, (_event, rootId: number, path: string, toRoot: number, toPath: string) =>

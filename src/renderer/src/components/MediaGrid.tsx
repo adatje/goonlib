@@ -9,6 +9,12 @@ export interface MediaGridProps {
   view: LibraryView
   hasRoots: boolean
   scanning: boolean
+  /**
+   * What is being looked at, when it is one named thing rather than the whole
+   * library. An empty one of these has nothing in it yet, which is a different
+   * thing from a search that found nothing.
+   */
+  emptyKind?: { kind: 'collection' | 'tag'; name: string } | null
   onOpen: (index: number) => void
   selection?: Selection
   /** Enables drag-to-reorder, which only means anything inside a collection. */
@@ -22,6 +28,7 @@ export function MediaGrid({
   view,
   hasRoots,
   scanning,
+  emptyKind,
   onOpen,
   selection,
   reorderable = false,
@@ -69,7 +76,7 @@ export function MediaGrid({
   }
 
   if (view.loaded && view.total === 0) {
-    return <Empty hasRoots={hasRoots} scanning={scanning} />
+    return <Empty hasRoots={hasRoots} scanning={scanning} emptyKind={emptyKind ?? null} />
   }
 
   return (
@@ -127,7 +134,15 @@ export function MediaGrid({
   )
 }
 
-function Empty({ hasRoots, scanning }: { hasRoots: boolean; scanning: boolean }): React.JSX.Element {
+function Empty({
+  hasRoots,
+  scanning,
+  emptyKind,
+}: {
+  hasRoots: boolean
+  scanning: boolean
+  emptyKind: { kind: 'collection' | 'tag'; name: string } | null
+}): React.JSX.Element {
   if (!hasRoots) {
     return (
       <div className="empty">
@@ -145,6 +160,23 @@ function Empty({ hasRoots, scanning }: { hasRoots: boolean; scanning: boolean })
       <div className="empty">
         <h2 className="empty__title">Scanning…</h2>
         <p className="empty__body">Items will appear here as they&apos;re found.</p>
+      </div>
+    )
+  }
+
+  // A collection or tag with nothing in it is not a search that failed - there
+  // is nothing to search. Say what it is and how things get into it.
+  if (emptyKind) {
+    return (
+      <div className="empty">
+        <h2 className="empty__title">
+          {emptyKind.name} is empty
+        </h2>
+        <p className="empty__body">
+          {emptyKind.kind === 'collection'
+            ? 'Select items in the library and use Add to Collection, or right-click a single one. A collection can also gather tags: right-click it in the sidebar to choose which.'
+            : 'Select items in the library and use Add to Tag, or right-click a single one.'}
+        </p>
       </div>
     )
   }

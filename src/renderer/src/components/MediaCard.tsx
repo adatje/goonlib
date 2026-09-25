@@ -132,6 +132,26 @@ export function MediaCard({
           </button>
         ) : null}
 
+        {/* Top left, opposite the heart. Selection was reachable only by holding
+            Cmd and clicking, which is a feature you have to be told about. */}
+        {onToggleSelect ? (
+          <button
+            type="button"
+            className={selected ? 'card__pick card__pick--on' : 'card__pick'}
+            onClick={(event) => {
+              event.stopPropagation()
+              if (event.shiftKey) onExtendSelect?.()
+              else onToggleSelect()
+            }}
+            onKeyDown={(event) => event.stopPropagation()}
+            aria-pressed={selected}
+            aria-label={selected ? `Deselect ${item.name}` : `Select ${item.name}`}
+            title={selected ? 'Deselect - shift-click for a range' : 'Select - shift-click for a range'}
+          >
+            {selected ? '✓' : ''}
+          </button>
+        ) : null}
+
         {item.kind === 'video' ? (
           <span className="card__badge">{duration || 'video'}</span>
         ) : null}

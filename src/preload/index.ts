@@ -138,6 +138,8 @@ const api: GoonLibApi = {
       ipcRenderer.invoke(IPC.mediaMove, mediaIds),
     moveTo: (mediaIds: number[], rootId: number, path: string): Promise<FolderActionResult> =>
       ipcRenderer.invoke(IPC.mediaMoveTo, mediaIds, rootId, path),
+    favoriteCount: (mediaIds: number[]): Promise<number> =>
+      ipcRenderer.invoke(IPC.mediaFavoriteCount, mediaIds),
     favorite: (mediaIds: number[], favorite: boolean): Promise<number> =>
       ipcRenderer.invoke(IPC.mediaFavorite, mediaIds, favorite),
     reveal: (mediaId: number): Promise<void> => ipcRenderer.invoke(IPC.revealInFinder, mediaId),

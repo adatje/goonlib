@@ -41,3 +41,21 @@ export function isFavorite(mediaId: number): boolean {
     .get(mediaId)
   return row?.favorite === 1
 }
+
+/**
+ * How many of these are favourited.
+ *
+ * The selection bar shows one button rather than two, and needs to know which
+ * way it points - which cannot be read off the grid, since most of a large
+ * selection is never rendered.
+ */
+export function countFavorites(mediaIds: number[]): number {
+  if (mediaIds.length === 0) return 0
+  const holes = mediaIds.map(() => '?').join(', ')
+  const row = getDb()
+    .prepare<number[], { n: number }>(
+      `SELECT COUNT(*) AS n FROM media WHERE favorited_at IS NOT NULL AND id IN (${holes})`,
+    )
+    .get(...mediaIds)
+  return row?.n ?? 0
+}

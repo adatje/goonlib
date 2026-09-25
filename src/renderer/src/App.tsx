@@ -24,7 +24,7 @@ import { IS_WINDOWS, TRASH_NAME } from './platform'
 import { setClassifyingSound } from './sounds'
 import { ContinueRow } from './components/ContinueRow'
 import { ShortcutsCard } from './components/ShortcutsCard'
-import { NO_FILTERS } from './components/Filters'
+import { countFilters, NO_FILTERS } from './components/Filters'
 import type { FilterSet } from './components/Filters'
 import { FolderMenu } from './components/FolderMenu'
 import type { FolderMenuAt } from './components/FolderMenu'
@@ -926,10 +926,19 @@ export default function App(): React.JSX.Element {
    * state to keep in step. In the Favorites view the same refresh drops an
    * un-hearted item out, the way trashing one does.
    */
+  /**
+   * Bumped whenever a favourite changes. The selection bar's heart reads how
+   * many of the selection are favourites, and favouriting does not change the
+   * selection - so without this the count it holds would never be re-read, and
+   * the button would keep pointing the way it did before the click.
+   */
+  const [favoriteKey, setFavoriteKey] = useState(0)
+
   const changeFavorite = useCallback(
     (mediaIds: number[], favorite: boolean) =>
       guard(async () => {
         await window.goonlib.media.favorite(mediaIds, favorite)
+        setFavoriteKey((key) => key + 1)
         view.refresh()
         await refreshSidebar()
       }),
@@ -996,6 +1005,37 @@ export default function App(): React.JSX.Element {
    * labels once this resolves, and doing that before the write lands would show
    * the old set.
    */
+  /**
+   * Filing everything selected. The single-item handlers above are what a
+   * right-click menu means; these are what the selection bar means, and the
+   * IPC underneath has always taken a list.
+   */
+  const addSelectionToCollection = useCallback(
+    (target: { id: number } | { name: string }) =>
+      guard(async () => {
+        const ids = [...selection.ids]
+        if (ids.length === 0) return
+        const id = 'id' in target ? target.id : (await window.goonlib.collections.create(target.name)).id
+        await window.goonlib.collections.add(id, ids)
+        await refreshSidebar()
+        view.refresh()
+      }),
+    [guard, refreshSidebar, selection, view],
+  )
+
+  const addSelectionToTag = useCallback(
+    (target: { id: number } | { name: string }) =>
+      guard(async () => {
+        const ids = [...selection.ids]
+        if (ids.length === 0) return
+        const id = 'id' in target ? target.id : (await window.goonlib.tags.create(target.name)).id
+        await window.goonlib.tags.assign(id, ids)
+        await refreshSidebar()
+        view.refresh()
+      }),
+    [guard, refreshSidebar, selection, view],
+  )
+
   const toggleTagOnMedia = useCallback(
     (target: { id: number } | { name: string }, mediaId: number, attached: boolean) =>
       guard(async () => {
@@ -1165,6 +1205,11 @@ export default function App(): React.JSX.Element {
             onTrash={() => void trashSelected(true)}
             onMove={() => void moveSelected()}
             onFavorite={favoriteSelected}
+            favoriteKey={favoriteKey}
+            collections={collections}
+            tags={tags}
+            onAddToCollection={addSelectionToCollection}
+            onAddToTag={addSelectionToTag}
           />
         ) : null}
 
@@ -1199,6 +1244,20 @@ export default function App(): React.JSX.Element {
             view={view}
             hasRoots={roots.length > 0}
             scanning={scanning}
+            // Only when nothing else is narrowing: a search inside a collection
+            // that finds nothing really is "nothing matches".
+            emptyKind={
+              search !== '' || countFilters(chosen) > 0
+                ? null
+                : collectionId !== null
+                  ? {
+                      kind: 'collection',
+                      name: collections.find((entry) => entry.id === collectionId)?.name ?? 'This collection',
+                    }
+                  : tagId !== null
+                    ? { kind: 'tag', name: tags.find((entry) => entry.id === tagId)?.name ?? 'This tag' }
+                    : null
+            }
             onOpen={openAt}
             selection={selection}
             // Reordering only makes sense against a hand-set order, so it's off

@@ -1007,6 +1007,7 @@ export const IPC = {
   foldersCount: 'folders:count',
   foldersMove: 'folders:move',
   mediaMoveTo: 'media:move-to',
+  mediaFavoriteCount: 'media:favorite-count',
   updatesStatus: 'updates:status',
   updatesCheck: 'updates:check',
   updatesDownload: 'updates:download',
@@ -1168,6 +1169,8 @@ export interface GoonLibApi {
      * already in the requested state are left alone, timestamp included.
      */
     favorite(mediaIds: number[], favorite: boolean): Promise<number>
+    /** How many of these are favourited, for a button that carries the state. */
+    favoriteCount(mediaIds: number[]): Promise<number>
     /** Opens the enclosing folder and selects the file. */
     reveal(mediaId: number): Promise<void>
     /** Pops up the native right-click menu for an item. */

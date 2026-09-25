@@ -208,3 +208,26 @@ export function SparkleIcon(): React.JSX.Element {
     </Icon>
   )
 }
+
+/** A waste basket, for the selection bar's Trash. */
+export function TrashIcon(): React.JSX.Element {
+  return (
+    <Icon>
+      <path d="M3 4.5h10" />
+      <path d="M6.5 4.5V3h3v1.5" />
+      <path d="M4.3 4.5l.7 8.2h6l.7-8.2" />
+      <path d="M6.8 7v3.5M9.2 7v3.5" />
+    </Icon>
+  )
+}
+
+/** A folder with an arrow into it, for moving a selection somewhere else. */
+export function MoveIcon(): React.JSX.Element {
+  return (
+    <Icon>
+      <path d="M2 4.5h4l1.2 1.5H14v7H2z" />
+      <path d="M6 9.5h4.5" />
+      <path d="M9 7.8l1.8 1.7L9 11.2" />
+    </Icon>
+  )
+}

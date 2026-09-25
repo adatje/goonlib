@@ -1605,6 +1605,30 @@ body {
   font-size: 13px;
 }
 
+/* The bulk filing buttons, each with its menu hung under it. */
+.selbar__file {
+  position: relative;
+}
+
+.selbar__picker {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+}
+
+/* The selection bar's destructive icon, which keeps danger's colour on hover
+   rather than taking the usual accent border. */
+.icon-button--danger {
+  color: var(--danger);
+}
+
+.icon-button--danger:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--bg-hover));
+  color: var(--danger);
+}
+
 .selbar__spacer {
   margin-left: auto;
 }
@@ -2466,6 +2490,45 @@ body {
 
 /* Favorites ----------------------------------------------------------------- */
 
+/*
+ * The selection square, mirroring the heart across the frame. Hidden until the
+ * card is pointed at, and permanent once it is ticked or anything else is - so
+ * a selection in progress stays visible while the pointer is elsewhere.
+ */
+.card__pick {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.card:hover .card__pick,
+.card:focus-within .card__pick,
+.card__pick:focus-visible,
+.card__pick--on {
+  opacity: 1;
+}
+
+.card__pick--on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
 .card__heart {
   position: absolute;
   z-index: 2;
@@ -2509,6 +2572,20 @@ body {
 
 .icon-button--fav:hover {
   color: var(--heart);
+}
+
+/*
+ * Lit when every selected item is already a favourite. `is-on` is only excluded
+ * from the icon colour further down, never given one of its own, so without
+ * this the heart filled itself in the muted grey it had inherited.
+ */
+.icon-button--fav.is-on {
+  color: var(--heart);
+  border-color: color-mix(in srgb, var(--heart) 45%, transparent);
+}
+
+.icon-button--fav.is-on svg path {
+  fill: currentColor;
 }
 
 .card__heart--on {
