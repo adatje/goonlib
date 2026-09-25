@@ -50,7 +50,9 @@ const DEFAULTS = {
   resumePosition: true,
   resumeAfterPercent: 30,
   showContinue: true,
+  continueCount: 20,
   resumeInSessions: true,
+  autoUpdate: true,
 }
 
 describe('playback preference', () => {

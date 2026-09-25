@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { Collection, MediaFileAction, MediaItem, Tag } from '@shared/types'
+import type { Collection, MediaFileAction, MediaItem, Root, Tag } from '@shared/types'
 import { IS_MAC, REVEAL_LABEL, TRASH_NAME } from '../platform'
+import { FolderPicker } from './FolderPicker'
 import { AddToCollection } from './AddToCollection'
 
 /** Where a menu was asked for, in window coordinates. */
@@ -11,6 +12,10 @@ export interface MenuAt {
 }
 
 export interface MediaMenuProps {
+  /** The sources whose folders can be moved into. */
+  roots: Root[]
+  /** Shown when a move has something to say. */
+  onMessage?: (text: string) => void
   at: MenuAt
   item: MediaItem | null
   collections: Collection[]
@@ -42,6 +47,7 @@ export interface MediaMenuProps {
  * the Finder, the Trash — is still done by the main process.
  */
 export function MediaMenu(props: MediaMenuProps): React.JSX.Element | null {
+  const [picking, setPicking] = useState(false)
   const { at, item, onClose, onChanged } = props
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [memberOf, setMemberOf] = useState<ReadonlySet<number>>(new Set())
@@ -104,6 +110,29 @@ export function MediaMenu(props: MediaMenuProps): React.JSX.Element | null {
         if (done && kind === 'trash') onChanged()
       })
       .catch(() => undefined)
+  }
+
+  if (picking) {
+    return (
+      <div className="mediamenu" style={place} ref={shellRef} role="menu" aria-label={`Move ${item.name}`}>
+        <span className="mediamenu__head">Move {item.name} to</span>
+        <div className="mediamenu__rule" role="separator" />
+        <FolderPicker
+          roots={props.roots}
+          exclude={{ rootId: -1, path: '' }}
+          onPick={(target) => {
+            onClose()
+            void window.goonlib.media
+              .moveTo([item.id], target.rootId, target.path)
+              .then((result) => {
+                if (result.message) props.onMessage?.(result.message)
+                if (result.ok) props.onChanged()
+              })
+              .catch(() => undefined)
+          }}
+        />
+      </div>
+    )
   }
 
   return (
@@ -197,6 +226,10 @@ export function MediaMenu(props: MediaMenuProps): React.JSX.Element | null {
       </button>
 
       <div className="mediamenu__rule" role="separator" />
+
+      <button type="button" className="mediamenu__item" role="menuitem" onClick={() => setPicking(true)}>
+        Move to folder…
+      </button>
 
       <button type="button" className="mediamenu__item" role="menuitem" onClick={() => act('reveal')}>
         {REVEAL_LABEL}

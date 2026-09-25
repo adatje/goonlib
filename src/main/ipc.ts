@@ -4,7 +4,9 @@ import { basename, dirname, join } from 'node:path'
 import type { KeyBindings } from '@shared/keys'
 import { clampInt } from '@shared/num'
 import { IPC } from '@shared/types'
+import { collectionTags, setCollectionTags } from './db/collections'
 import { updates } from './updates'
+import { countBeneath, createFolder, deleteFolder, moveFolderContents, moveMediaTo } from './folderactions'
 import type { Theme, ThemeMode, ThemeType } from '@shared/theme'
 import type {
   AiSettings,
@@ -123,6 +125,22 @@ const MAX_PAGE = 500
 export function registerIpc(): void {
   handle(IPC.appInfo, (): AppInfo => appInfo())
 
+  handle(IPC.foldersCreate, (_event, rootId: number, parentPath: string, name: string) =>
+    createFolder(Number(rootId), String(parentPath), String(name)),
+  )
+  handle(IPC.foldersCount, (_event, rootId: number, path: string) =>
+    countBeneath(Number(rootId), String(path)),
+  )
+  handle(IPC.foldersDelete, (_event, rootId: number, path: string) =>
+    deleteFolder(Number(rootId), String(path)),
+  )
+  handle(IPC.mediaMoveTo, (_event, mediaIds: number[], rootId: number, path: string) =>
+    moveMediaTo(mediaIds.map(Number), Number(rootId), String(path)),
+  )
+  handle(IPC.foldersMove, (_event, rootId: number, path: string, toRoot: number, toPath: string) =>
+    moveFolderContents(Number(rootId), String(path), Number(toRoot), String(toPath)),
+  )
+
   handle(IPC.updatesStatus, (): UpdateState => updates.current())
   handle(IPC.updatesCheck, (): Promise<UpdateState> => updates.check())
   handle(IPC.updatesDownload, (): Promise<UpdateState> => updates.download())
@@ -180,7 +198,12 @@ export function registerIpc(): void {
 
   handle(IPC.collectionsList, (): Collection[] => listCollections())
   handle(IPC.collectionsCreate, (_event, name: string): Collection => createCollection(name))
-  handle(IPC.collectionsRename, (_event, id: number, name: string): void =>
+handle(IPC.collectionsTags, (_event, id: number): number[] => collectionTags(Number(id)))
+  handle(IPC.collectionsSetTags, (_event, id: number, tagIds: number[]): void =>
+    setCollectionTags(Number(id), tagIds ?? []),
+  )
+
+    handle(IPC.collectionsRename, (_event, id: number, name: string): void =>
     renameCollection(id, name),
   )
   handle(IPC.collectionsDelete, (_event, id: number): void => deleteCollection(id))
@@ -496,12 +519,17 @@ export function registerIpc(): void {
       cancelId: 1,
       message: 'Undo everything the classifier filed?',
       detail:
-        'Every tag it applied goes, along with the items it sorted into collections, and any tag or collection that leaves empty. Your own tags, collections and files are untouched. Classifying again re-creates them.',
+        'Every tag it applied goes, along with the items it sorted into collections, and any tag or collection that leaves empty. A scan that is classifying right now is stopped first. Your own tags, collections and files are untouched. Classifying again re-creates them.',
     }
     const answer = window
       ? await dialog.showMessageBox(window, question)
       : await dialog.showMessageBox(question)
     if (answer.response !== 0) return null
+
+    // Nothing may be classifying while this runs: a scan part way through the
+    // classify stage writes labels as fast as they are deleted, and the queued
+    // restart would start another the moment it unwound.
+    await indexer.stop()
 
     const gone = resetClassification()
     console.log('[ai] reset:', gone)

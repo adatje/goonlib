@@ -15,6 +15,8 @@ export interface FolderTreeProps {
   roots: Root[]
   location: FolderLocation | null
   onSelect: (location: FolderLocation | null) => void
+  /** Right-click on a folder row, for the folder menu. */
+  onContextMenu?: (rootId: number, path: string, name: string, x: number, y: number) => void
 }
 
 /**
@@ -49,6 +51,7 @@ export function FolderTree(props: FolderTreeProps): React.JSX.Element {
           enabled={root.enabled}
           location={location}
           onSelect={onSelect}
+          onContextMenu={props.onContextMenu}
         />
       ))}
     </div>
@@ -65,6 +68,7 @@ interface FolderBranchProps {
   hasChildren?: boolean
   location: FolderLocation | null
   onSelect: (location: FolderLocation) => void
+  onContextMenu?: (rootId: number, path: string, name: string, x: number, y: number) => void
 }
 
 function FolderBranch(props: FolderBranchProps): React.JSX.Element {
@@ -116,6 +120,11 @@ function FolderBranch(props: FolderBranchProps): React.JSX.Element {
         type="button"
         className={selected ? 'tree__row tree__row--on' : 'tree__row'}
         onClick={() => onSelect({ rootId, path })}
+        onContextMenu={(event) => {
+          if (!props.onContextMenu) return
+          event.preventDefault()
+          props.onContextMenu(rootId, path, name, event.clientX, event.clientY)
+        }}
         style={{ paddingLeft: ROW_INDENT + depth * DEPTH_STEP }}
         title={path || name}
         data-disabled={!enabled}
@@ -149,6 +158,7 @@ function FolderBranch(props: FolderBranchProps): React.JSX.Element {
               hasChildren={child.hasChildren}
               location={location}
               onSelect={onSelect}
+              onContextMenu={props.onContextMenu}
             />
           ))
         : null}

@@ -89,6 +89,8 @@ export class Indexer extends EventEmitter {
   private lastEmit = 0
   /** Scans asked for while one was already running. See `start`. */
   private queued = new Set<number | typeof ALL_ROOTS>()
+  /** Whether this run may classify. False for the scan that runs at launch. */
+  private classifying = true
 
   get running(): boolean {
     return this.controller !== null
@@ -103,6 +105,25 @@ export class Indexer extends EventEmitter {
   }
 
   /**
+   * Stops for good, and waits until it really has.
+   *
+   * `cancel` only asks: the queued restarts stay, so a scan begins again the
+   * moment this one unwinds, and the stage that is aborting may still be part
+   * way through writing a row. Resetting the classifier needs neither to
+   * happen - it deletes what the classifier filed, and a run still going would
+   * put some of it straight back, which reads as a reset that will not take.
+   */
+  async stop(timeoutMs = 5_000): Promise<void> {
+    this.queued.clear()
+    this.controller?.abort()
+
+    const until = Date.now() + timeoutMs
+    while (this.running && Date.now() < until) {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+  }
+
+  /**
    * Starts a scan. Returns immediately; watch the `progress` event for updates.
    *
    * A request that arrives while a scan is already running is queued rather than
@@ -111,11 +132,17 @@ export class Indexer extends EventEmitter {
    * keep a scan running for hours, which made "add a folder and it appears"
    * quietly stop being true for the whole of that window.
    */
-  start(rootId?: number): void {
+  start(rootId?: number, options?: { classify?: boolean }): void {
     if (this.running) {
       this.queued.add(rootId ?? ALL_ROOTS)
       return
     }
+
+    // A scan the user did not ask for does not classify. The classifier is
+    // usually a model served on this machine, and at launch there is no reason
+    // to think it is up yet - a catch-up scan that ran into a cold LM Studio
+    // burned through the backlog marking everything failed.
+    this.classifying = options?.classify !== false
 
     const controller = new AbortController()
     this.controller = controller
@@ -280,6 +307,8 @@ export class Indexer extends EventEmitter {
    * work already in flight.
    */
   private async classify(signal: AbortSignal): Promise<void> {
+    if (!this.classifying) return
+
     const settings = aiSettings()
 
     // Items are left *pending* rather than skipped when the feature is off, so

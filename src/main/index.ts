@@ -194,7 +194,9 @@ app.whenReady().then(async () => {
   // cheap after the first run. Deferred until the window is up so it never
   // competes with first paint.
   window.webContents.once('did-finish-load', () => {
-    setTimeout(() => indexer.start(), 1200)
+    // Catches up on what changed while the app was closed, but never
+    // classifies: nothing says the model is up a second after launch.
+    setTimeout(() => indexer.start(undefined, { classify: false }), 1200)
     updates.start(window, playbackPrefs().autoUpdate)
     // Only when asked for: connecting starts a Bluetooth scan, which is not
     // something to do unprompted on every launch.

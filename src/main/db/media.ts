@@ -444,7 +444,17 @@ function buildMediaQuery(query: Omit<MediaQuery, 'limit' | 'offset'>): {
   const joins: string[] = []
 
   if (query.collectionId !== undefined) {
-    joins.push('JOIN collection_items ci ON ci.media_id = m.id AND ci.collection_id = ?')
+    // In the collection if it was filed there, or if it carries any tag the
+    // collection gathers. Left join so the rule-matched ones are not dropped,
+    // with the membership asserted in the where clause below.
+    joins.push('LEFT JOIN collection_items ci ON ci.media_id = m.id AND ci.collection_id = ?')
+    where.push(
+      `(ci.media_id IS NOT NULL OR EXISTS (
+          SELECT 1 FROM collection_tags ct
+            JOIN media_tags mt ON mt.tag_id = ct.tag_id
+           WHERE ct.collection_id = ? AND mt.media_id = m.id))`,
+    )
+    params.push(query.collectionId)
     // The join parameter comes before every WHERE parameter in the final SQL, so
     // it has to be unshifted rather than pushed.
     params.unshift(query.collectionId)

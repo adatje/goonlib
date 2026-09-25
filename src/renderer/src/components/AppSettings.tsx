@@ -18,7 +18,9 @@ export function AppSettings(props: {
 
   return (
     <>
-      <div className="settings__section">
+      <UpdateSettings playback={playback} onPlaybackChange={props.onPlaybackChange} />
+
+      <div className="settings__group settings__section">
         <span className="settings__label">Media Player</span>
 
         <ImageSeconds
@@ -85,8 +87,6 @@ export function AppSettings(props: {
         onPlaybackChange={props.onPlaybackChange}
         onChanged={props.onChanged}
       />
-
-      <UpdateSettings playback={playback} onPlaybackChange={props.onPlaybackChange} />
     </>
   )
 }

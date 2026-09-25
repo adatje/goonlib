@@ -32,10 +32,14 @@ export function UpdateSettings(props: {
         onChange={(autoUpdate) => props.onPlaybackChange({ autoUpdate })}
       />
 
-      <div className="settings__row settings__row--tight">
-        <Action state={state} />
-        <span className="settings__hint">{describe(state)}</span>
-      </div>
+      {/* Nothing to say from source: there is no button, and the version is
+          already in the sheet's footer. */}
+      {state.kind === 'unsupported' ? null : (
+        <div className="settings__row settings__row--tight">
+          <Action state={state} />
+          <span className="settings__hint">{describe(state)}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -75,8 +79,6 @@ function Action({ state }: { state: UpdateState }): React.JSX.Element | null {
           Restart to update
         </button>
       )
-    case 'unsupported':
-      return null
     default:
       return (
         <button
@@ -108,9 +110,7 @@ function describe(state: UpdateState): string {
       return `${state.newVersion} is out, but this build cannot install it itself - macOS only replaces signed apps.`
     case 'error':
       return state.message ?? 'That did not work.'
-    case 'unsupported':
-      return `Running ${state.version} from source; updates are for a built app.`
     default:
-      return `Running ${state.version}.`
+      return ''
   }
 }

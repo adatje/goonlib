@@ -134,6 +134,19 @@ export interface FolderNode {
   hasChildren: boolean
 }
 
+/** What a folder action did. `message` is shown as-is when it is not null. */
+export interface FolderActionResult {
+  ok: boolean
+  /** Items moved, or trashed. */
+  moved: number
+  /** Items that had to be renamed at the destination to avoid a clash. */
+  renamed: number
+  failed: number
+  /** Items that left the library because they landed outside every source. */
+  dropped: number
+  message: string | null
+}
+
 /** Where the user currently is in the folder hierarchy. */
 export interface FolderLocation {
   rootId: number
@@ -882,6 +895,8 @@ export const IPC = {
   collectionsList: 'collections:list',
   collectionsCreate: 'collections:create',
   collectionsRename: 'collections:rename',
+  collectionsTags: 'collections:tags',
+  collectionsSetTags: 'collections:set-tags',
   collectionsDelete: 'collections:delete',
   collectionsAdd: 'collections:add',
   collectionsRemove: 'collections:remove',
@@ -987,6 +1002,11 @@ export const IPC = {
   toyPatternDelete: 'toy:pattern-delete',
   /** Main -> renderer: the toy's status moved. */
   toyUpdate: 'toy:update',
+  foldersCreate: 'folders:create',
+  foldersDelete: 'folders:delete',
+  foldersCount: 'folders:count',
+  foldersMove: 'folders:move',
+  mediaMoveTo: 'media:move-to',
   updatesStatus: 'updates:status',
   updatesCheck: 'updates:check',
   updatesDownload: 'updates:download',
@@ -1039,11 +1059,28 @@ export interface GoonLibApi {
   folders: {
     /** Immediate subfolders of `path` within a root. Pass '' for the top level. */
     children(rootId: number, path: string): Promise<FolderNode[]>
+    /** Makes a folder inside this one. */
+    create(rootId: number, parentPath: string, name: string): Promise<FolderActionResult>
+    /** How many items are beneath a folder, for the confirmation before deleting. */
+    count(rootId: number, path: string): Promise<number>
+    /** Sends the folder and everything under it to the Trash. One undo puts it back. */
+    remove(rootId: number, path: string): Promise<FolderActionResult>
+    /** Moves every item beneath this folder into another, flat. */
+    moveContents(
+      rootId: number,
+      path: string,
+      targetRootId: number,
+      targetPath: string,
+    ): Promise<FolderActionResult>
   }
   collections: {
     list(): Promise<Collection[]>
     create(name: string): Promise<Collection>
     rename(id: number, name: string): Promise<void>
+    /** The tags this collection gathers. Anything carrying one of them is in it. */
+    tags(id: number): Promise<number[]>
+    /** Replaces them. Membership follows at once; nothing is copied anywhere. */
+    setTags(id: number, tagIds: number[]): Promise<void>
     remove(id: number): Promise<void>
     /** Appends to the end; items already present keep their place. */
     add(collectionId: number, mediaIds: number[]): Promise<number>
@@ -1124,6 +1161,8 @@ export interface GoonLibApi {
      * outside means it has left the library, and its row goes too.
      */
     move(mediaIds: number[]): Promise<MoveResult>
+    /** Moves items into a folder already in the library, with no dialog. */
+    moveTo(mediaIds: number[], rootId: number, path: string): Promise<FolderActionResult>
     /**
      * Favorites or unfavorites items. Resolves with how many changed; items
      * already in the requested state are left alone, timestamp included.

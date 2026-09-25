@@ -24,6 +24,7 @@ import type {
   AppInfo,
   Collection,
   DuplicateReport,
+  FolderActionResult,
   FolderNode,
   GoonLibApi,
   ThemeImport,
@@ -88,10 +89,26 @@ const api: GoonLibApi = {
   folders: {
     children: (rootId: number, path: string): Promise<FolderNode[]> =>
       ipcRenderer.invoke(IPC.foldersChildren, rootId, path),
+    create: (rootId: number, parentPath: string, name: string): Promise<FolderActionResult> =>
+      ipcRenderer.invoke(IPC.foldersCreate, rootId, parentPath, name),
+    count: (rootId: number, path: string): Promise<number> =>
+      ipcRenderer.invoke(IPC.foldersCount, rootId, path),
+    remove: (rootId: number, path: string): Promise<FolderActionResult> =>
+      ipcRenderer.invoke(IPC.foldersDelete, rootId, path),
+    moveContents: (
+      rootId: number,
+      path: string,
+      targetRootId: number,
+      targetPath: string,
+    ): Promise<FolderActionResult> =>
+      ipcRenderer.invoke(IPC.foldersMove, rootId, path, targetRootId, targetPath),
   },
   collections: {
     list: (): Promise<Collection[]> => ipcRenderer.invoke(IPC.collectionsList),
     create: (name: string): Promise<Collection> => ipcRenderer.invoke(IPC.collectionsCreate, name),
+    tags: (id: number): Promise<number[]> => ipcRenderer.invoke(IPC.collectionsTags, id),
+    setTags: (id: number, tagIds: number[]): Promise<void> =>
+      ipcRenderer.invoke(IPC.collectionsSetTags, id, tagIds),
     rename: (id: number, name: string): Promise<void> =>
       ipcRenderer.invoke(IPC.collectionsRename, id, name),
     remove: (id: number): Promise<void> => ipcRenderer.invoke(IPC.collectionsDelete, id),
@@ -119,6 +136,8 @@ const api: GoonLibApi = {
     redoTrash: (): Promise<TrashUndoResult> => ipcRenderer.invoke(IPC.mediaRedoTrash),
     move: (mediaIds: number[]): Promise<MoveResult> =>
       ipcRenderer.invoke(IPC.mediaMove, mediaIds),
+    moveTo: (mediaIds: number[], rootId: number, path: string): Promise<FolderActionResult> =>
+      ipcRenderer.invoke(IPC.mediaMoveTo, mediaIds, rootId, path),
     favorite: (mediaIds: number[], favorite: boolean): Promise<number> =>
       ipcRenderer.invoke(IPC.mediaFavorite, mediaIds, favorite),
     reveal: (mediaId: number): Promise<void> => ipcRenderer.invoke(IPC.revealInFinder, mediaId),

@@ -307,4 +307,26 @@ export const migrations: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_media_ext ON media(ext);
     `,
   },
+  {
+    version: 12,
+    name: 'collection-tags',
+    sql: /* sql */ `
+      -- Tags a collection gathers automatically. An item carrying any of them is
+      -- in the collection without being filed by hand, which is what separates a
+      -- collection from a tag: a tag describes one item, a collection is a
+      -- standing question about several.
+      --
+      -- Membership is worked out when it is read rather than written into
+      -- collection_items, so tagging something later puts it in the collection
+      -- with nothing to keep in step - and dropping a tag takes it back out of
+      -- every collection that gathered it, which the cascade below does for free.
+      CREATE TABLE collection_tags (
+        collection_id INTEGER NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+        tag_id        INTEGER NOT NULL REFERENCES tags(id)        ON DELETE CASCADE,
+        PRIMARY KEY (collection_id, tag_id)
+      );
+
+      CREATE INDEX idx_collection_tags_tag ON collection_tags(tag_id);
+    `,
+  },
 ]

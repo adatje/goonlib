@@ -4144,6 +4144,135 @@ button.styling__reset:hover {
   background: color-mix(in srgb, var(--danger) 16%, transparent);
 }
 
+/* The gathered-tags panel, opened from a collection's # button. */
+.ctags {
+  /* Floated like the menus: inline, the sidebar's narrow scrolling column
+     squeezed it to a strip and cut it off. */
+  position: fixed;
+  z-index: 80;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg-raised);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.ctags__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ctags__head .settings__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.ctags__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.ctags__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ctags__row:hover {
+  background: var(--list-hover);
+}
+
+.ctags__row input {
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+.ctags__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The folder menu's own pieces: it wears the media menu's clothes otherwise. */
+.mediamenu__head {
+  padding: 6px 9px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.mediamenu__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 9px 8px;
+  max-width: 260px;
+}
+
+/* The destination tree, held to a height so a deep library still fits on screen. */
+.foldermenu__picker {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  min-width: 220px;
+  overflow-y: auto;
+  padding: 2px 0;
+}
+
+.foldermenu__row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.foldermenu__twist {
+  flex-shrink: 0;
+  width: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.foldermenu__target {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.foldermenu__target:hover {
+  background: var(--list-hover);
+}
+
 .mediamenu__rule {
   height: 1px;
   margin: 5px 4px;
@@ -4197,9 +4326,13 @@ button.styling__reset:hover {
 /* Continue watching: a row of part-watched videos above the library. */
 .continue {
   flex-shrink: 0;
-  /* The same side padding as the library's list, so the row below can be
-     measured against the same width. */
-  padding: 12px 10px 0;
+  /*
+   * The same usable width as the library below: its list padding, plus the
+   * scrollbar gutter the grid reserves on both edges. Without the gutter the
+   * two work their columns out from widths 26px apart, and at some window
+   * sizes they settle on a different number of them.
+   */
+  padding: 12px calc(10px + var(--scrollbar, 13px)) 0;
 }
 
 .continue__title {

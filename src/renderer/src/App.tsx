@@ -26,6 +26,8 @@ import { ContinueRow } from './components/ContinueRow'
 import { ShortcutsCard } from './components/ShortcutsCard'
 import { NO_FILTERS } from './components/Filters'
 import type { FilterSet } from './components/Filters'
+import { FolderMenu } from './components/FolderMenu'
+import type { FolderMenuAt } from './components/FolderMenu'
 import { MediaMenu } from './components/MediaMenu'
 import type { MenuAt } from './components/MediaMenu'
 import { ScanBar } from './components/ScanBar'
@@ -113,6 +115,7 @@ export default function App(): React.JSX.Element {
   // Bumped when something was refused for want of control, so the session bar
   // can point at the button that asks for it.
   const [controlNudge, setControlNudge] = useState(0)
+  const [folderMenuAt, setFolderMenuAt] = useState<FolderMenuAt | null>(null)
   // Held here rather than in the viewer: the viewer is mounted and unmounted
   // constantly, and re-reading the preference on every open would flicker.
   const [playback, setPlayback] = useState<PlaybackPrefs>({
@@ -1072,6 +1075,11 @@ export default function App(): React.JSX.Element {
         onAddRoot={() => void addRoot()}
         onRemoveRoot={removeRoot}
         onToggleRoot={toggleRoot}
+        onFolderMenu={(rootId, path, name, x, y) => setFolderMenuAt({ rootId, path, name, x, y })}
+        onChanged={() => {
+          void refreshSidebar()
+          view.refresh()
+        }}
         onSelectFolder={(next) => {
           setLocation(next)
           // Picking a folder means leaving the collection, tag and favorites views.
@@ -1299,10 +1307,25 @@ export default function App(): React.JSX.Element {
 
       {showKeys ? <ShortcutsCard onClose={() => setShowKeys(false)} /> : null}
 
+      {folderMenuAt ? (
+        <FolderMenu
+          at={folderMenuAt}
+          roots={roots.filter((root) => root.enabled)}
+          onClose={() => setFolderMenuAt(null)}
+          onChanged={() => {
+            void refreshSidebar()
+            view.refresh()
+          }}
+          onMessage={setError}
+        />
+      ) : null}
+
       {menuAt ? (
         <MediaMenu
           at={menuAt}
           item={menuItem}
+          roots={roots.filter((root) => root.enabled)}
+          onMessage={setError}
           collections={collections}
           tags={tags}
           activeCollection={collections.find((entry) => entry.id === collectionId) ?? null}

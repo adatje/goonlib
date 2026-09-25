@@ -33,6 +33,25 @@ export function withTrashName(text: string): string {
 }
 
 /**
+ * Measures a scrollbar once and publishes it as `--scrollbar`.
+ *
+ * The library reserves a scrollbar gutter on both edges and works its columns
+ * out from what is left; the Continue watching row above it has no scrollbar.
+ * Unless the row subtracts the same amount, the two land on different column
+ * counts at certain window widths and stop lining up. The width differs by
+ * platform and by the `thin` keyword, so it is measured rather than assumed.
+ */
+export function measureScrollbar(): void {
+  const probe = document.createElement('div')
+  probe.style.cssText =
+    'position:absolute;top:-9999px;width:100px;height:100px;overflow:scroll;scrollbar-width:thin'
+  document.body.append(probe)
+  const width = probe.offsetWidth - probe.clientWidth
+  probe.remove()
+  document.documentElement.style.setProperty('--scrollbar', `${width}px`)
+}
+
+/**
  * Marks the document with the platform so the stylesheet can lay the chrome out
  * for it. Called before the first render: the top of the window is 22px taller
  * on macOS, and moving it after paint would be visible.

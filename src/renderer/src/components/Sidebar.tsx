@@ -32,6 +32,10 @@ export interface SidebarProps {
   onRemoveRoot: (id: number) => void
   onToggleRoot: (root: Root) => void
   onSelectFolder: (location: FolderLocation | null) => void
+  /** Fired when something changed that the grid and the counts should re-read. */
+  onChanged?: () => void
+  /** Right-click on a folder, for the folder menu. */
+  onFolderMenu?: (rootId: number, path: string, name: string, x: number, y: number) => void
   onSelectCollection: (id: number | null) => void
   onCreateCollection: (name: string) => void
   onRenameCollection: (id: number, name: string) => void
@@ -135,6 +139,8 @@ export function Sidebar(props: SidebarProps): React.JSX.Element {
         onCreate={props.onCreateCollection}
         onRename={props.onRenameCollection}
         onDelete={props.onDeleteCollection}
+        tags={props.tags}
+        onTagsChanged={props.onChanged ?? (() => undefined)}
       />
 
       <TagList
@@ -158,6 +164,7 @@ export function Sidebar(props: SidebarProps): React.JSX.Element {
             roots={props.roots.filter((root) => root.enabled)}
             location={props.location}
             onSelect={props.onSelectFolder}
+            onContextMenu={props.onFolderMenu}
           />
         )}
       </SidebarSection>

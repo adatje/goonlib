@@ -34,15 +34,29 @@ function toCollection(row: CollectionRow): Collection {
   }
 }
 
+/**
+ * Items in a collection: filed by hand, or carrying any tag the collection
+ * gathers. Written once here so the count, the grid and the membership check
+ * cannot drift apart.
+ */
+const MEMBERS = `
+  SELECT ci.media_id AS media_id, ci.source AS source
+    FROM collection_items ci
+   WHERE ci.collection_id = c.id
+   UNION
+  SELECT mt.media_id AS media_id, 'rule' AS source
+    FROM collection_tags ct
+    JOIN media_tags mt ON mt.tag_id = ct.tag_id
+   WHERE ct.collection_id = c.id
+`
+
 export function listCollections(): Collection[] {
   const rows = getDb()
     .prepare<[], CollectionRow>(
       `SELECT c.id, c.name, c.cover_media_id, c.created_at,
-              COUNT(ci.media_id) AS count,
-              COALESCE(SUM(ci.source = 'ai'), 0) AS ai_count
+              (SELECT COUNT(DISTINCT media_id) FROM (${MEMBERS})) AS count,
+              (SELECT COUNT(DISTINCT media_id) FROM (${MEMBERS}) WHERE source = 'ai') AS ai_count
          FROM collections c
-         LEFT JOIN collection_items ci ON ci.collection_id = c.id
-        GROUP BY c.id
         ORDER BY c.name COLLATE NOCASE`,
     )
     .all()
@@ -54,8 +68,8 @@ export function getCollection(id: number): Collection | null {
   const row = getDb()
     .prepare<[number], CollectionRow>(
       `SELECT c.id, c.name, c.cover_media_id, c.created_at,
-              COUNT(ci.media_id) AS count,
-              COALESCE(SUM(ci.source = 'ai'), 0) AS ai_count
+              (SELECT COUNT(DISTINCT media_id) FROM (${MEMBERS})) AS count,
+              (SELECT COUNT(DISTINCT media_id) FROM (${MEMBERS}) WHERE source = 'ai') AS ai_count
          FROM collections c
          LEFT JOIN collection_items ci ON ci.collection_id = c.id
         WHERE c.id = ?
@@ -275,4 +289,29 @@ function renormalise(collectionId: number): void {
   orderedMediaIds(collectionId).forEach((entry, index) => {
     update.run(index + 1, collectionId, entry.mediaId)
   })
+}
+
+
+/** The tags a collection gathers, by id. */
+export function collectionTags(collectionId: number): number[] {
+  return getDb()
+    .prepare<[number], { tag_id: number }>(
+      'SELECT tag_id FROM collection_tags WHERE collection_id = ? ORDER BY tag_id',
+    )
+    .all(collectionId)
+    .map((row) => row.tag_id)
+}
+
+/**
+ * Sets them, whole. Membership follows immediately because it is worked out
+ * when read: nothing has to be added to or taken out of collection_items.
+ */
+export function setCollectionTags(collectionId: number, tagIds: number[]): void {
+  const db = getDb()
+  const wanted = [...new Set(tagIds.map(Number).filter(Number.isInteger))]
+  db.transaction(() => {
+    db.prepare('DELETE FROM collection_tags WHERE collection_id = ?').run(collectionId)
+    const add = db.prepare('INSERT OR IGNORE INTO collection_tags (collection_id, tag_id) VALUES (?, ?)')
+    for (const tagId of wanted) add.run(collectionId, tagId)
+  })()
 }

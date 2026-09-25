@@ -1,4 +1,6 @@
 import { useCallback, useState } from 'react'
+import type { Tag } from '@shared/types'
+import { CollectionTags } from './CollectionTags'
 import type { Collection } from '@shared/types'
 import { formatCount } from '../format'
 import { CollectionsIcon } from './SidebarIcons'
@@ -9,6 +11,10 @@ export interface CollectionListProps {
   selectedId: number | null
   onSelect: (id: number | null) => void
   onCreate: (name: string) => void
+  /** Every tag, for choosing which ones a collection gathers. */
+  tags: Tag[]
+  /** Fired after the gathered tags change, so counts and the grid re-read. */
+  onTagsChanged: () => void
   onRename: (id: number, name: string) => void
   onDelete: (collection: Collection) => void
 }
@@ -17,6 +23,8 @@ export function CollectionList(props: CollectionListProps): React.JSX.Element {
   const { collections, selectedId, onSelect, onCreate, onRename, onDelete } = props
 
   const [creating, setCreating] = useState(false)
+  /** Which collection's gathered tags are open, if any. */
+  const [tagsFor, setTagsFor] = useState<{ id: number; x: number; y: number } | null>(null)
   const [draft, setDraft] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
 
@@ -76,7 +84,11 @@ export function CollectionList(props: CollectionListProps): React.JSX.Element {
                     }
                     onClick={() => onSelect(collection.id)}
                     onDoubleClick={() => setEditingId(collection.id)}
-                    title={`${collection.name} - double-click to rename`}
+                    onContextMenu={(event) => {
+                      event.preventDefault()
+                      setTagsFor({ id: collection.id, x: event.clientX, y: event.clientY })
+                    }}
+                    title={`${collection.name} - double-click to rename, right-click for its tags`}
                   >
                     <span className="collection__label">
                       {collection.name}
@@ -99,6 +111,16 @@ export function CollectionList(props: CollectionListProps): React.JSX.Element {
                   </button>
                 </>
               )}
+              {tagsFor?.id === collection.id ? (
+                <CollectionTags
+                  collectionId={collection.id}
+                  collectionName={collection.name}
+                  at={{ x: tagsFor.x, y: tagsFor.y }}
+                  tags={props.tags}
+                  onChanged={props.onTagsChanged}
+                  onClose={() => setTagsFor(null)}
+                />
+              ) : null}
             </li>
           ))}
         </ul>
