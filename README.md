@@ -19,148 +19,102 @@ you ask, and nothing ever leaves the machine.
 
 </div>
 
----
+## Download
 
-## What it does
+Downloads are on the [releases page](../../releases) with:
+- `.dmg` for macOS on Apple Silicon or Intel
+- `.exe` for Windows
+- `.appimage` for Linux
 
-- **Indexes what you point it at.** Probes with ffprobe, makes thumbnails and hover-scrub
-  previews, and picks up where it left off if it is interrupted. A drive that is unplugged
-  is remembered rather than forgotten, and reattaches on the next scan.
-- **Plays almost anything.** Chromium decodes what it can; MKV and other awkward containers
-  are remuxed, and codecs it cannot handle (HEVC, VC-1, ProRes) are transcoded in the
-  background and cached.
-- **Finds duplicates.** Exact matches by content hash, near matches by perceptual hash —
-  the same clip at two resolutions, or a screenshot of one, still land together.
-- **Sorts however you like.** Collections and tags by hand, or by a vision model if you want
-  one. Filters narrow the library by tag, file type, length and size.
-- **Remembers where you were.** Videos resume where you left them, and the ones you are
-  part-way through sit in a row above the library. It can be switched off, and cleared.
-- **Looks how you want.** Themes are plain JSON files you can edit, import and share, with
-  four built in. The whole interface follows them, including a guest's browser.
-- **Stays out of the way.** Every shortcut is rebindable, the `?` key lists them, and your
-  settings and themes can be backed up to a file and restored.
-- **Watches with someone.** See below.
-- **Drives a toy.** See below.
+⚠️ Apps are all unsigned, so the first launch needs a click past the warning that generates.
+- on macOS: right-click the app and choose Open
+- on Windows: More info -> then Run anyway. 
+- on Linux: you're probably fine
 
----
 
-## Getting it
+## Building & contributing
 
-Downloads are on the [releases page](../../releases): a `.dmg` for macOS on Apple Silicon
-or Intel, an installer for Windows, and an AppImage for Linux.
+Running it from source, how the project is laid out, and how to send a change:
+see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Nothing is signed yet, so the first launch needs a click past the warning — on macOS,
-right-click the app and choose Open; on Windows, More info then Run anyway. After that it
-opens normally.
 
----
+## Features
+A brief overview of features per category
 
-## Watching together
+### App
+GoonLib comes with a few base features such as:
+- **Appearance**: App comes with full custom export/importable theming support
+- **Shortcuts**: For common controls and actions, with rebinds for all available for all shortcuts.
+- **Feature toggles**: Don't like it? Then disable it!
+- **Backup**: Because re-applying application settings and themes is annoying (does not touch your library)
 
-Start a session and hand someone a link. They open it in a browser — no install — and
-watch with you, in step: play, pause and seek are shared.
 
-- **Getting in.** The link only buys the right to knock. Both screens show the same two
-  words; you approve the person after checking they see them. Nothing is served before
-  that.
-- **Who drives.** One person is in control at a time, and it starts with you. Anyone
-  else can ask; only whoever is in control can hand it over — you included, once you have
-  given it away. If the person in control leaves or is removed, it comes back to you.
-- **Coming back.** A guest who reloads, reopens the link, or whose phone slept goes
-  straight back in without being approved again, for as long as the session runs. Someone
-  who has gone quiet stops holding up playback until they return.
-- **What they can reach.** Everything you can — the full grid, search, folders, tags.
-  A session is read-only against your library: there is no route that trashes, moves,
-  renames or re-tags anything.
-- **Staying in step.** Small drifts are smoothed by playing a few percent fast or slow;
-  only a real gap causes a visible seek. Playback is held whenever anyone cannot play
-  yet, which matters because a file that plays natively for you may still be transcoding
-  for them.
-- **Ending it.** One button closes the port, revokes every credential, and kills the
-  tunnel. Quitting the app does the same.
+### Multi-media library
+An interactive library manager with:
+- **Multi-source support**: Library searches all available and enabled sources
+- **Favourites**: For your preferred material
+- **Tags**: for organising your media files
+- **Collections**: for bringing together your tags and media
+- **Meta data**: for both the image properties and EXIF data
+- **Formats**: all common image, video and web-formats.
+- **Thumbnails & Previews**: generated using local (non-ai) libraries
+- **Duplicate detection**: using content hashing to allow easy cleanup
+- **Watch history**: with video positions to allow you to pause & resume your gooning sessions.
+- **Search**: any bit of info from your library from names to tags/collections ++
+- **Filters & Sort-by**: for easy organisation  
+- **Shuffle**: your content or the next media item for a fresh experience.
+- **Storage Analyser**: see a breakdown of your goonlib based on sources, folders, tags, types and more.
+- **Media auto-play & resume**: to make your watching experience smoother
+- **Bulk operations**: finetuned to allow efficient library management
 
-Reaching a guest who is not on your network needs a tunnel you already have:
+### Watch Together
+Let's you share a session based web-version of goonlib, so that you can goon together with friends & partners alike.
 
-```bash
-brew install cloudflared                      # macOS
-winget install --id Cloudflare.cloudflared    # Windows
-```
+This is done via a fancy little tunnel over something called a...
+- Reverse proxy, like [cloudflared](https://github.com/cloudflare/cloudflared) or [ngrok](https://ngrok.com/)
+- It can also be done over local network! (*but then Router FW/NAT rules may apply)
 
-`cloudflared` quick tunnels need no account. `ngrok` works too. Neither is bundled —
-GoonLib runs whichever it finds and stops it when the session ends.
+To start a session, click the "Watch Together" button in the sidebar and...
+1. Select your sharing method (cloudflared recommended)
+2. Start your session & share your link
+3. Verify & let in your guest
 
----
+⚠️ Privacy and/or safety notes:
+- All sessions are protected by a unique code word
+- All guests must be let in individually
+- All enabled sources are browseable by guests
+- Host has "the controller" for the media player as default
+  - Guests can request it (or add items to the watch queue)
+- Host can always override toy controls for connected toys
+- Sessions do not persist
 
-## Toys
 
-Connect a toy from the wave button at the top of the sidebar. It works over Bluetooth
-or the Lovense USB dongle, through the [Intiface](https://intiface.com) engine. The engine
-is downloaded the first time you connect (about 6 MB, from the Buttplug.io GitHub release)
-and checked against a pinned SHA-256. If Intiface Central is already running, GoonLib uses
-that instead.
+### Toy Integrations
+For both Lovense *(full, incl. multi-engine 'stroker+vibrator' support)* and generic bluetooth devices. This includes (so far):
+- **Pre-defined toy control patterns**: (steady, pulse, wave, build, burst)
+- **Custom pattern creator**: so you can create your own perfect vibes
+  - **Funscript Support**: so you can re-use your patterns elsewhere.
+- **Video Sync**: Sync your yours to the 'beat' of a video via...
+  - **Video Pattern generator**: generate unique patterns based of the video's audio/sound profile
+- **Shareable control**: Allows you to (at-will) share control of your toy with guests in watch-together sessions
 
-Four things can drive the toy. Whichever is strongest at any moment wins:
 
-- **Funscripts.** A `.funscript` with the same name as a video, in the same folder,
-  plays in step with it — pause, seek and playback speed included. A stroker follows
-  the strokes. A vibrator buzzes harder for faster strokes, or deeper ones if you prefer.
-- **The soundtrack.** A video with no script can follow its own loudness instead. The
-  audio is read once per file and cached.
-- **Patterns** from the panel: steady, pulse, wave, build, burst.
-- **Guests.** In a Watch together session, guests can send you a buzz, if you have
-  turned that on. There's a ceiling on strength and length, a cooldown per guest, and a
-  cap on how much can be queued.
+### AI Content categorization
+- Based on BYOM (Bring-Your-Own-Model)
+  - Support for Claude and/or OpenAI compatible cloud models.
+  - Support for local hosted models over Olama, LMStudio, vLLM (etc)
+    - Example model: `qwen3-vl-8b-nsfw-caption-v4.5`
+- **Content Classifier**: using three sub-features, each toggleable:
+  1. **Auto-tagger**: for all content types based of thumbnails/previews
+  2. **Description generator**: writes alt-text descriptions based of thumbnails/previews
+  3. **Collection Sorter**: auto-sorts content into collections based on tags & descriptions.
 
-One ceiling covers all four. **Stop** — in the panel, in the viewer, or the X key
-anywhere — stops everything and stays stopped until you resume. Quitting the app stops
-the toy too.
-
-On macOS, GoonLib needs Bluetooth permission (System Settings → Privacy & Security →
-Bluetooth). On Linux it goes through BlueZ, so the `bluetooth` service has to be running.
-Windows needs nothing.
+ℹ️ AI Notice(s):
+- All AI features are opt-in
+- All AI features are local-first
+- No AI features are required.
 
 ---
-
-## Known gaps
-
-Two things are macOS-only, for want of an equivalent elsewhere: copying a file itself to
-the clipboard (other platforms copy its path), and putting a deleted file back with
-Ctrl+Z — Windows' Recycle Bin does not say where it put a file, so undo there points you
-at the Recycle Bin instead.
-
----
-
-## For developers
-
-Electron + React + SQLite. Requires Node 22.
-
-```bash
-npm install
-npm run dev
-```
-
-Running from a terminal, it is the terminal app that macOS asks to allow Bluetooth for,
-not GoonLib.
-
-```bash
-npm test          # vitest, no app window required
-npm run typecheck # two tsc projects, main/preload/shared and renderer
-npm run dist      # electron-builder, for the platform you are on
-```
-
-Releases are built by GitHub Actions on all three platforms — the native pieces
-(better-sqlite3, sharp, ffmpeg) cannot be cross-built from one machine with any
-confidence. Pushing a `v*` tag builds and attaches the results to a draft release.
-
-| Path | What's in it |
-| --- | --- |
-| `src/main` | Main process: database, scanning, ffmpeg, the `media://` protocol |
-| `src/main/cowatch` | Session server, room state, sync engine, guest client |
-| `src/main/toy` | Intiface engine, toy connection, script loading, the mixing loop |
-| `src/preload` | The IPC bridge — a fixed set of named calls, never a generic passthrough |
-| `src/renderer` | React interface |
-| `src/shared` | The IPC contract, shared by all three |
-| `tests` | Vitest |
 
 ## Licence
 

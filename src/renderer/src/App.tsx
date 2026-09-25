@@ -23,6 +23,7 @@ import { actionOf } from './keys'
 import { IS_WINDOWS, TRASH_NAME } from './platform'
 import { setScanSound } from './sounds'
 import { ContinueRow } from './components/ContinueRow'
+import { CoWatchCard } from './components/CoWatchCard'
 import { ShortcutsCard } from './components/ShortcutsCard'
 import { countFilters, NO_FILTERS } from './components/Filters'
 import type { FilterSet } from './components/Filters'
@@ -200,6 +201,7 @@ export default function App(): React.JSX.Element {
 
   const scanning = progress !== null && ACTIVE_PHASES.has(progress.phase)
   const [duplicateCount, setDuplicateCount] = useState<number | null>(null)
+  const [showCoWatch, setShowCoWatch] = useState(false)
 
   // A selection only means anything against the list it was made in. Changing
   // folder, collection, tag, search or sort leaves you looking at different
@@ -1161,6 +1163,7 @@ export default function App(): React.JSX.Element {
         onDeleteTag={deleteTag}
         // Someone at the door is the one thing worth jumping straight to.
         onShowShortcuts={() => setShowKeys(true)}
+        onOpenCoWatch={() => setShowCoWatch(true)}
         onOpenSettings={() =>
           openSettings(cowatch.session.knocking.length > 0 ? 'together' : undefined)
         }
@@ -1390,6 +1393,17 @@ export default function App(): React.JSX.Element {
       ) : null}
 
       {showKeys ? <ShortcutsCard onClose={() => setShowKeys(false)} /> : null}
+
+      {showCoWatch ? (
+        <CoWatchCard
+          cowatch={cowatch}
+          onOpenSettings={() => {
+            setShowCoWatch(false)
+            openSettings('together')
+          }}
+          onClose={() => setShowCoWatch(false)}
+        />
+      ) : null}
 
       {folderMenuAt ? (
         <FolderMenu

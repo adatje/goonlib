@@ -9,7 +9,15 @@ import markSound4 from '../assets/mark-4.mp3'
 import markSound5 from '../assets/mark-5.mp3'
 import { CollectionList } from './CollectionList'
 import { FolderTree } from './FolderTree'
-import { CopiesIcon, DescriptionIcon, FolderIcon, LibraryIcon, ScanIcon, SourcesIcon } from './SidebarIcons'
+import {
+  CopiesIcon,
+  DescriptionIcon,
+  FolderIcon,
+  LibraryIcon,
+  PeopleIcon,
+  ScanIcon,
+  SourcesIcon,
+} from './SidebarIcons'
 import { SidebarSection } from './SidebarSection'
 import { TagList } from './TagList'
 import { GearIcon, HeartIcon } from './Toolbar'
@@ -57,6 +65,8 @@ export interface SidebarProps {
   onShowShortcuts: () => void
   /** Opens the Settings sheet — the toy, watching together, and AI. */
   onOpenSettings: () => void
+  /** Opens the Watch Together card: start a session, see who is in it, stop it. */
+  onOpenCoWatch: () => void
   /** A session is running. Lights the gear, so sharing is never invisible. */
   sharing: boolean
   /** Someone is waiting to be let in, which needs answering wherever you are. */
@@ -253,6 +263,24 @@ export function Sidebar(props: SidebarProps): React.JSX.Element {
           <span className="visually-hidden">Duplicates</span>
         </button>
 
+        {/* Sharing is not a setting. It is started, watched and stopped, so it
+            gets its own way in - and carries the knock count itself, which is
+            the thing most worth answering quickly. */}
+        <button
+          type="button"
+          className={
+            props.sharing || props.knocking > 0
+              ? 'icon-button icon-button--on sidebar__cowatch'
+              : 'icon-button sidebar__cowatch'
+          }
+          onClick={props.onOpenCoWatch}
+          title={coWatchTitle(props)}
+        >
+          <PeopleIcon />
+          {props.knocking > 0 ? <span className="sidebar__badge">{props.knocking}</span> : null}
+          <span className="visually-hidden">Watch Together</span>
+        </button>
+
         <button
           type="button"
           className="icon-button sidebar__help"
@@ -263,11 +291,10 @@ export function Sidebar(props: SidebarProps): React.JSX.Element {
           <span className="visually-hidden">Keyboard shortcuts</span>
         </button>
 
-        {/* The one way into Settings — the toy, watching together, and AI
-            alike. It looks like every other icon here: the toy chip says what
-            the toy is doing, so the gear does not colour itself for it. The
-            count stays, since someone at the door is answered from here and
-            nothing else on this screen says so. */}
+        {/* Settings proper. It looks like every other icon here: the toy chip
+            says what the toy is doing, so the gear does not colour itself for
+            it. The knock badge has moved to the button beside it, which is now
+            where someone at the door is actually answered. */}
         <button
           type="button"
           className="icon-button sidebar__settings"
@@ -275,7 +302,6 @@ export function Sidebar(props: SidebarProps): React.JSX.Element {
           title={settingsTitle(props)}
         >
           <GearIcon />
-          {props.knocking > 0 ? <span className="sidebar__badge">{props.knocking}</span> : null}
           <span className="visually-hidden">Settings</span>
         </button>
       </footer>
@@ -288,6 +314,16 @@ function basename(path: string): string {
   return parts[parts.length - 1] ?? path
 }
 
+/** What the Watch Together button says on hover: what it is, and what it is doing. */
+function coWatchTitle(props: SidebarProps): string {
+  if (props.knocking > 0) {
+    return props.knocking === 1
+      ? 'Watch Together - someone is waiting to join'
+      : `Watch Together - ${props.knocking} waiting to join`
+  }
+  return props.sharing ? 'Watch Together - sharing now' : 'Watch Together - start a session'
+}
+
 /** What the duplicates button says on hover, which depends on whether it knows yet. */
 function duplicatesTitle(count: number | null): string {
   if (count === null) return 'Duplicates: still looking'
@@ -298,11 +334,6 @@ function duplicatesTitle(count: number | null): string {
 /** What the gear says on hover: Settings, and anything it is lit up about. */
 function settingsTitle(props: SidebarProps): string {
   const notes: string[] = []
-  if (props.knocking > 0) {
-    notes.push(props.knocking === 1 ? 'someone is waiting to join' : `${props.knocking} waiting to join`)
-  } else if (props.sharing) {
-    notes.push('sharing')
-  }
   if (props.toyLive) notes.push(props.toyStopped ? 'toy stopped' : 'toy connected')
   return notes.length > 0 ? `Settings - ${notes.join(', ')}` : 'Settings'
 }

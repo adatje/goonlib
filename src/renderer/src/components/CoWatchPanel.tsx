@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { CoWatchGuest, CoWatchKnock, CoWatchTunnelProvider } from '@shared/types'
 import { CLOUDFLARED_INSTALL, IS_WINDOWS } from '../platform'
 import type { CoWatchView } from '../state/useCoWatch'
+import { PeopleIcon } from './SidebarIcons'
 
 export interface CoWatchSectionProps {
   cowatch: CoWatchView
@@ -157,10 +158,11 @@ export function CoWatchSection({ cowatch }: CoWatchSectionProps): React.JSX.Elem
 
               <button
                 type="button"
-                className="button"
+                className="button button--withicon"
                 disabled={cowatch.busy}
                 onClick={() => (provider === 'lan' ? cowatch.start('lan') : cowatch.start('tunnel', provider))}
               >
+                <PeopleIcon />
                 Start a session
               </button>
             </div>

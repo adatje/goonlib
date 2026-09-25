@@ -3350,8 +3350,8 @@ body {
   border-top: 1px solid var(--border);
 }
 
-/* Relative, so the knocking badge is positioned against the gear. */
-.sidebar__foot > .sidebar__settings {
+/* Relative, so the knocking badge is positioned against the button holding it. */
+.sidebar__foot > .sidebar__cowatch {
   position: relative;
 }
 
@@ -4958,4 +4958,63 @@ button.styling__reset:hover {
 /* Why "select all" stopped short of everything. */
 .dupes__spared {
   color: var(--heart);
+}
+
+/* Watch Together, as a card rather than a settings tab. Narrower than the
+   shortcuts card: it is one panel, not a page of columns. */
+.cowatchcard {
+  width: 460px;
+  max-height: 80vh;
+}
+
+/* The gear in the card's corner, set apart from the panel above it. */
+.cowatchcard__foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/*
+ * The card's own dividers.
+ *
+ * The first group needs none: it is the top of the body, and a rule there
+ * divides the heading from itself. The one between the groups is the pink rule
+ * the sidebar uses, rather than the settings sheet's grey edge, because this is
+ * a card and not a page of settings.
+ */
+.cowatchcard .settings__group:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.cowatchcard .settings__group + .settings__group {
+  border-top: 0;
+}
+
+.cowatchcard .settings__group + .settings__group::before {
+  content: '';
+  align-self: center;
+  width: 60%;
+  height: 1px;
+  margin-top: -8px;
+  background: color-mix(in srgb, var(--icon) 35%, transparent);
+}
+
+/* A clear row of space above the gear, so it reads as its own corner rather
+   than as the last thing in the panel. */
+.cowatchcard__foot {
+  padding-top: 26px;
+}
+
+/* A button wearing an icon beside its label, like the toolbar's controls. */
+.button--withicon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.button--withicon svg {
+  flex-shrink: 0;
+  color: var(--icon);
 }
