@@ -647,10 +647,30 @@
     return true;
   }
 
-  function evicted() {
+  function evicted() { farewell('You have been removed.'); }
+
+  /**
+   * The end of the road, whichever way it came.
+   *
+   * Everything that talks to the host is stopped first: the page is about to
+   * say the session is over, and a banner appearing behind that message
+   * because a poll timed out would contradict it. The button reloads, which is
+   * the way back in if the host starts sharing again at the same address.
+   */
+  function farewell(why) {
+    stopPolling();
+    if (checking) { clearInterval(checking); checking = null; }
+    clearTimeout(imageTimer);
+    try { video.pause(); } catch (e) {}
     document.body.innerHTML =
       '<div style="display:grid;place-items:center;height:100vh;text-align:center">' +
-      '<div><h1>The session ended</h1><p style="color:var(--text-muted)">You have been removed.</p></div></div>';
+      '<div><h1>The session ended</h1>' +
+      '<p style="color:var(--text-muted)">' + why + '</p>' +
+      '<p><button id="again" style="margin-top:10px;padding:8px 14px;border-radius:8px;' +
+      'border:1px solid var(--border);background:var(--bg-raised);color:inherit;cursor:pointer">' +
+      'Reload</button></p></div></div>';
+    var again = document.getElementById('again');
+    if (again) again.addEventListener('click', function () { location.reload(); });
   }
 
   /**
@@ -693,6 +713,13 @@
     });
 
     source.addEventListener('evicted', function () { source.close(); evicted(); });
+
+    // The host stopped sharing. Not an eviction and not a dropped line, and
+    // the guest should be told which of the three it was.
+    source.addEventListener('ended', function () {
+      source.close();
+      farewell('The host stopped sharing.');
+    });
 
     // EventSource reconnects on its own, but a stream that connects and then
     // delivers nothing never errors -- so the timer below is what actually

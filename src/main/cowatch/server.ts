@@ -147,7 +147,18 @@ export class SessionServer {
     if (this.heartbeat) clearInterval(this.heartbeat)
     this.heartbeat = null
 
-    for (const subscriber of this.subscribers) subscriber.res.end()
+    /*
+     * Tell every guest the session is over before the socket goes.
+     *
+     * A stream that simply ends looks exactly like a stream that broke, so
+     * without this a guest sat under a "connection lost" banner, polling a
+     * host that was never coming back, with a stale library still on screen.
+     * One event is the difference between "this ended" and "this is broken".
+     */
+    for (const subscriber of this.subscribers) {
+      this.write(subscriber, 'ended', null)
+      subscriber.res.end()
+    }
     this.subscribers.clear()
 
     const server = this.server
